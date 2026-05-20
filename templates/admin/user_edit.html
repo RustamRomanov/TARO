@@ -1,0 +1,298 @@
+{% extends "admin/base.html" %}
+{% block title %}Редактирование - Astrov Админ{% endblock %}
+{% block page_title_class %}{% endblock %}
+{% block page_title %}Редактирование пользователя{% endblock %}
+
+{% block content %}
+{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+{% if message %}<div class="alert alert-success">{{ message }}</div>{% endif %}
+{% if user.bot_stopped_at %}
+<div class="alert alert-error" style="margin-bottom: 1rem;">
+  <strong>Чат с ботом:</strong> пользователь остановил или заблокировал бота (по данным Telegram или доставке).
+  {% if user.bot_stopped_detail %}<br>{{ user.bot_stopped_detail }}{% endif %}
+  {% if user.bot_member_status %}<br>Сырой статус: <code>{{ user.bot_member_status }}</code>{% endif %}
+  <br><small>Зафиксировано: {{ user.bot_stopped_at[:19] }} UTC</small>
+</div>
+{% endif %}
+<p style="color: var(--astrov-muted); margin-bottom: 1rem;">ID: {{ user.telegram_id }} · {{ user.full_name or user.username or '-' }}</p>
+<form method="post" action="/admin/users/{{ user.telegram_id }}/sync-telegram" style="margin-bottom: 1rem;">
+  <button type="submit" class="btn btn-outline" style="font-size: 0.85rem;">Обновить из Telegram</button>
+</form>
+
+<div class="card" style="max-width: 520px; margin-bottom: 1.5rem;">
+  <h3 style="margin-top: 0;">Сообщение в Telegram</h3>
+  <p style="color: var(--astrov-muted); font-size: 0.85rem; margin: 0 0 0.75rem 0;">
+    Сообщение уходит в чат с ботом у этого пользователя. По правилам Telegram доставка возможна, если пользователь хотя бы раз открыл бота или написал ему. Иначе сначала попросите его зайти в бота по ссылке ниже и нажать «Запустить».
+  </p>
+  {% if bot_username %}
+  <p style="font-size: 0.85rem; margin: 0 0 0.75rem 0;">
+    <strong>Ссылка на бота:</strong>
+    <a href="https://t.me/{{ bot_username }}" target="_blank" rel="noopener noreferrer">t.me/{{ bot_username }}</a>
+  </p>
+  {% else %}
+  <p style="color: var(--astrov-warning); font-size: 0.85rem; margin: 0 0 0.75rem 0;">
+    Задайте TELEGRAM_BOT_USERNAME в настройках, чтобы здесь показывалась ссылка на бота.
+  </p>
+  {% endif %}
+  <form method="post" action="/admin/users/{{ user.telegram_id }}/send-telegram">
+    <div class="form-group">
+      <label for="telegram_message">Текст (до 4096 символов)</label>
+      <textarea id="telegram_message" name="telegram_message" rows="8" maxlength="4096" required placeholder="Текст пользователю (спецсимволы HTML будут показаны как текст)."></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Отправить</button>
+  </form>
+</div>
+
+<div class="card" style="max-width: 520px; margin-bottom: 1.5rem;">
+  <h3 style="margin-top: 0;">Учёт по пользователю</h3>
+  <table class="table" style="font-size: 0.9rem;">
+    <tr><td>Баланс</td><td><strong>{{ (user.balance_cents or 0) / 100 }} ₽</strong> ({{ user.balance_cents or 0 }} ★)</td></tr>
+    <tr><td>Внесено (топ-апы)</td><td>{{ (user.total_topup_cents or 0) / 100 }} ₽</td></tr>
+    <tr><td>Начислено бонусов</td><td>{{ (user.total_bonus_cents or 0) / 100 }} ₽</td></tr>
+    <tr><td>Потрачено</td><td>{{ (user.total_spent_cents or 0) / 100 }} ₽</td></tr>
+    {% if user.referred_by_telegram_id %}
+    <tr><td>Приглашён по реф.</td><td>реферер Telegram ID: {{ user.referred_by_telegram_id }}</td></tr>
+    {% endif %}
+  </table>
+  <form method="post" action="/admin/users/{{ user.telegram_id }}/bonus-balance" style="margin-top: 0.9rem; border-top: 1px solid var(--astrov-border); padding-top: 0.9rem;">
+    <h4 style="margin: 0 0 0.6rem 0;">Начислить бонусный баланс</h4>
+    <div class="form-group">
+      <label for="bonus_amount_rub">Сумма (₽)</label>
+      <input type="number" id="bonus_amount_rub" name="bonus_amount_rub" min="0.01" step="0.01" placeholder="Например, 100.00" required>
+    </div>
+    <div class="form-group">
+      <label for="bonus_note">Комментарий (необязательно)</label>
+      <input type="text" id="bonus_note" name="bonus_note" maxlength="200" placeholder="Причина начисления">
+    </div>
+    <button type="submit" class="btn btn-primary">Начислить бонус</button>
+  </form>
+  {% if user.payments %}
+  <details style="margin-top: 0.5rem;">
+    <summary>История операций (последние {{ user.payments|length }})</summary>
+    <table class="table" style="font-size: 0.8rem; margin-top: 0.5rem;">
+      <thead><tr><th>Дата</th><th>Тип</th><th>Сумма (коп)</th><th>Статус</th></tr></thead>
+      <tbody>
+      {% for p in user.payments %}
+      <tr>
+        <td>{{ p.created_at }}</td>
+        <td>{% if p.kind_label %}{{ p.kind_label }}{% else %}{{ p.kind }}{% endif %}</td>
+        <td>{{ p.amount_cents }}</td>
+        <td>{{ p.status }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endif %}
+</div>
+
+<div class="card" style="max-width: 720px; margin-bottom: 1.5rem;">
+  <details class="admin-usage-collapsible">
+    <summary class="admin-usage-collapsible__summary">
+      <span class="admin-usage-collapsible__title">Использование сервисов по дням</span>
+      <span class="admin-usage-collapsible__hint">развернуть</span>
+    </summary>
+    <div class="admin-usage-collapsible__body">
+      <p style="color: var(--astrov-muted); font-size: 0.85rem; margin: 0 0 0.85rem 0;">
+        UTC, 120 дней. Подписи по продукту: гороскоп, таро по раскладам, анализ фото, натальная карта, матрица, сонник, совместимость.
+        Магический шар не вызывает ИИ (ответы локально), в таблице токенов не появляется.
+      </p>
+      {% if user.usage_by_day %}
+      {% for uday in user.usage_by_day %}
+      <details style="margin-bottom: 0.5rem; border: 1px solid var(--astrov-border); border-radius: var(--astrov-radius-sm); padding: 0.35rem 0.6rem;">
+        <summary style="cursor: pointer;"><strong>{{ uday.day_label }}</strong> · событий: {{ uday.total }}</summary>
+        <table class="table" style="font-size: 0.85rem; margin-top: 0.45rem;">
+          <thead><tr><th>Сервис</th><th>Раз</th></tr></thead>
+          <tbody>
+          {% for usage_row in uday.rows %}
+          <tr>
+            <td>{{ usage_row.label }}</td>
+            <td>{{ usage_row["count"] }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </details>
+      {% endfor %}
+      {% else %}
+      <p style="color: var(--astrov-muted);">За выбранный период записей в журнале нет.</p>
+      {% endif %}
+    </div>
+  </details>
+  <style>
+  .admin-usage-collapsible > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.15rem 0;
+  }
+  .admin-usage-collapsible > summary::-webkit-details-marker { display: none; }
+  .admin-usage-collapsible > summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--astrov-accent, #fbbf24);
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: transform 0.15s ease;
+  }
+  .admin-usage-collapsible[open] > summary::before {
+    transform: rotate(90deg);
+  }
+  .admin-usage-collapsible__title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  .admin-usage-collapsible__hint {
+    font-size: 0.78rem;
+    color: var(--astrov-muted);
+    font-weight: normal;
+  }
+  .admin-usage-collapsible[open] .admin-usage-collapsible__hint {
+    display: none;
+  }
+  .admin-usage-collapsible__body {
+    margin-top: 0.65rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--astrov-border);
+  }
+  </style>
+</div>
+
+<div class="card" style="max-width: 520px;">
+  <form method="post" action="/admin/users/{{ user.telegram_id }}/edit">
+    <h3 style="margin-top: 0;">Профиль (пол, возраст)</h3>
+    <p style="color: var(--astrov-muted); font-size: 0.9rem; margin: -0.5rem 0 1rem 0;">Заполните, если данные не пришли из приложения. Эти поля используются в списке пользователей.</p>
+    <div class="form-group">
+      <label for="profile_name">Имя в профиле</label>
+      <input type="text" id="profile_name" name="profile_name" value="{{ user.profile_name or '' }}" placeholder="{{ user.full_name or user.username or '' }}">
+    </div>
+    <div class="form-group">
+      <label for="profile_birth_date">Дата рождения</label>
+      <input type="date" id="profile_birth_date" name="profile_birth_date" value="{{ user.profile_birth_date or '' }}">
+    </div>
+    <div class="form-group">
+      <label for="profile_gender">Пол</label>
+      <select id="profile_gender" name="profile_gender">
+        <option value="">- не указан</option>
+        <option value="m" {% if user.profile_gender == 'm' %}selected{% endif %}>Мужской</option>
+        <option value="f" {% if user.profile_gender == 'f' %}selected{% endif %}>Женский</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="profile_birth_city">Место рождения</label>
+      <p style="color: var(--astrov-muted); font-size: 0.82rem; margin: 0 0 0.5rem 0;">
+        В списке пользователей может быть короткое «Ульяновск» или длинная строка из подсказки: это только отображение текста.
+        Для натальной карты важны координаты в базе (см. строку ниже). Выберите пункт из списка подсказок, чтобы сохранить привязку.
+      </p>
+      <div style="position: relative;">
+        <input type="text" id="profile_birth_city" name="profile_birth_city" value="{{ user.profile_birth_city or '' }}" placeholder="Начните вводить город..." autocomplete="off">
+        <input type="hidden" id="profile_birth_lat" name="profile_birth_lat" value="{% if user.profile_birth_lat is not none %}{{ user.profile_birth_lat }}{% endif %}">
+        <input type="hidden" id="profile_birth_lon" name="profile_birth_lon" value="{% if user.profile_birth_lon is not none %}{{ user.profile_birth_lon }}{% endif %}">
+        <div id="admin_city_suggest" style="display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 20; max-height: 220px; overflow-y: auto; background: var(--astrov-bg-elevated); border: 1px solid var(--astrov-border); border-radius: var(--astrov-radius-sm); margin-top: 2px;"></div>
+      </div>
+      <p id="admin_city_coord_hint" style="font-size: 0.82rem; margin: 0.45rem 0 0 0;"></p>
+    </div>
+    <script>
+    (function () {
+      var city = document.getElementById('profile_birth_city');
+      var latH = document.getElementById('profile_birth_lat');
+      var lonH = document.getElementById('profile_birth_lon');
+      var box = document.getElementById('admin_city_suggest');
+      var hint = document.getElementById('admin_city_coord_hint');
+      if (!city || !latH || !lonH || !box || !hint) return;
+      function updateHint() {
+        var la = (latH.value || '').trim();
+        var lo = (lonH.value || '').trim();
+        if (la && lo) {
+          hint.textContent = 'Привязка к карте: широта ' + la + ', долгота ' + lo + '.';
+          hint.style.color = 'var(--astrov-success)';
+        } else if ((city.value || '').trim()) {
+          hint.textContent = 'Координат пока нет в форме. Сохраните после выбора из списка, иначе сервер попытается найти точку по тексту или сбросит место, если не найдёт.';
+          hint.style.color = 'var(--astrov-warning)';
+        } else {
+          hint.textContent = '';
+        }
+      }
+      updateHint();
+      var timer = null;
+      city.addEventListener('input', function () {
+        if (timer) clearTimeout(timer);
+        latH.value = '';
+        lonH.value = '';
+        updateHint();
+        var q = (city.value || '').trim();
+        if (q.length < 2) {
+          box.style.display = 'none';
+          box.innerHTML = '';
+          return;
+        }
+        timer = setTimeout(function () {
+          fetch('/api/geocode/search?q=' + encodeURIComponent(q))
+            .then(function (r) { return r.ok ? r.json() : { results: [] }; })
+            .then(function (data) {
+              var list = (data && data.results) ? data.results : [];
+              box.innerHTML = '';
+              if (!list.length) {
+                box.style.display = 'none';
+                return;
+              }
+              list.slice(0, 10).forEach(function (item) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = item.display_name;
+                btn.style.cssText = 'display:block;width:100%;text-align:left;padding:0.45rem 0.6rem;border:none;background:transparent;color:inherit;cursor:pointer;font-size:0.84rem;border-bottom:1px solid var(--astrov-border);';
+                btn.addEventListener('mouseenter', function () { btn.style.background = 'rgba(251,191,36,0.12)'; });
+                btn.addEventListener('mouseleave', function () { btn.style.background = 'transparent'; });
+                btn.addEventListener('click', function () {
+                  city.value = item.display_name;
+                  latH.value = String(item.lat);
+                  lonH.value = String(item.lon);
+                  box.style.display = 'none';
+                  updateHint();
+                });
+                box.appendChild(btn);
+              });
+              box.style.display = 'block';
+            })
+            .catch(function () { box.style.display = 'none'; });
+        }, 350);
+      });
+      document.addEventListener('click', function (e) {
+        if (e.target === city || box.contains(e.target)) return;
+        box.style.display = 'none';
+      });
+    })();
+    </script>
+    <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--astrov-border);">
+    <h3>Тариф</h3>
+    <div class="form-group">
+      <label for="status">Статус тарифа</label>
+      <select id="status" name="status">
+        <option value="free" {% if user.status == 'free' %}selected{% endif %}>тариф</option>
+        <option value="trial" {% if user.status == 'trial' %}selected{% endif %}>Пробный</option>
+        <option value="full_access" {% if user.status == 'full_access' %}selected{% endif %}>Полный доступ</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="subscription_end_date">Дата окончания подписки</label>
+      <input type="date" id="subscription_end_date" name="subscription_end_date" value="{{ user.subscription_end_date or '' }}">
+    </div>
+    <div class="form-group">
+      <label for="trial_ends_at">Окончание триала</label>
+      <input type="date" id="trial_ends_at" name="trial_ends_at" value="{{ user.trial_ends_at or '' }}">
+    </div>
+    <div class="form-group">
+      <label for="gift_days">Подарить подписку (дней от сегодня)</label>
+      <input type="number" id="gift_days" name="gift_days" min="0" placeholder="0 = не менять" value="">
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <button type="submit" class="btn btn-primary">Сохранить</button>
+      <a href="/admin/users" class="btn btn-outline">К списку</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

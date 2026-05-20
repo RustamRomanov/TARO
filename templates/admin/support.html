@@ -1,0 +1,117 @@
+{% extends "admin/base.html" %}
+{% block title %}Astrov - Обращения{% endblock %}
+{% block page_title_class %}{% endblock %}
+{% block page_title %}Обращения{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3 class="card-title">Список веток</h3>
+  <p style="font-size:.8rem;color:var(--astrov-muted);margin-bottom:.75rem;">
+    Одна строка на пользователя. Внутри ветки несколько обращений по времени.
+  </p>
+  <form method="get" action="/admin/support" class="grid grid-2" style="margin-bottom: 0.75rem;">
+    <div class="form-group">
+      <label for="search">Поиск</label>
+      <input id="search" name="search" value="{{ search or '' }}" placeholder="id, username, имя, текст">
+    </div>
+    <div class="form-group">
+      <label for="status_filter">Статус</label>
+      <select id="status_filter" name="status_filter">
+        <option value="" {% if not status_filter %}selected{% endif %}>Все</option>
+        <option value="unread" {% if status_filter == 'unread' %}selected{% endif %}>Непрочитанные</option>
+        <option value="read" {% if status_filter == 'read' %}selected{% endif %}>Прочитанные</option>
+        <option value="resolved" {% if status_filter == 'resolved' %}selected{% endif %}>Решенные</option>
+        <option value="unresolved" {% if status_filter == 'unresolved' %}selected{% endif %}>Не решенные</option>
+      </select>
+    </div>
+    <input type="hidden" name="limit" value="{{ limit }}">
+    <div style="display:flex; gap:.5rem; align-items:flex-end;">
+      <button class="btn btn-primary" type="submit">Применить</button>
+      <a class="btn btn-outline" href="/admin/support">Сбросить</a>
+    </div>
+  </form>
+
+  {% if not items %}
+  <div class="astrov-empty-state">
+    <div class="astrov-empty-icon"><i class="fas fa-inbox"></i></div>
+    <p class="astrov-empty-title">Пока нет веток</p>
+    <p class="astrov-empty-text">Когда пользователи напишут в поддержку, ветки появятся здесь.</p>
+  </div>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th>Пользователь</th>
+        <th>Шт.</th>
+        <th>Непроч. в ветке</th>
+        <th>Последнее (превью)</th>
+        <th>Последнее: чтение</th>
+        <th>Последнее: решение</th>
+        <th>Вложения (всего)</th>
+        <th>Активность</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr
+        style="cursor:pointer;"
+        onclick="window.location.href='/admin/support/user/{{ item.user_id }}'"
+      >
+        <td>
+          {% set user_label = item.profile_name or item.full_name or item.username or "" %}
+          {% if user_label %}
+          <div>{{ user_label }}</div>
+          {% endif %}
+          <div style="font-size:.74rem;color:var(--astrov-muted);">ID: {{ item.user_id }}</div>
+        </td>
+        <td>{{ item.message_count }}</td>
+        <td>
+          {% if item.has_unread_in_thread %}
+          <span class="badge badge-warning">{{ item.unread_in_thread }}</span>
+          {% else %}
+          <span class="badge badge-secondary">0</span>
+          {% endif %}
+        </td>
+        <td style="max-width:14rem;">
+          <div style="font-size:.72rem;color:var(--astrov-muted);margin-bottom:.2rem;">#{{ item.latest_id }}</div>
+          {{ item.message[:100] }}{% if item.message|length > 100 %}...{% endif %}
+        </td>
+        <td>
+          {% if item.read_state == "unread" %}
+          <span class="badge badge-warning">непрочитано</span>
+          {% else %}
+          <span class="badge badge-secondary">прочитано</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if item.resolved_state == "resolved" %}
+          <span class="badge badge-success">решено</span>
+          {% else %}
+          <span class="badge badge-warning">не решено</span>
+          {% endif %}
+        </td>
+        <td>{{ item.attachments_count }}</td>
+        <td>{{ item.created_at.strftime("%d.%m.%Y %H:%M") if item.created_at else "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+{% if pages > 1 %}
+<div class="card" style="padding:.75rem 1rem;">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div>Страница {{ current_page }} из {{ pages }} · Всего {{ total }}</div>
+    <div style="display:flex;gap:.5rem;">
+      {% if current_page > 1 %}
+      <a class="btn btn-outline" href="/admin/support?skip={{ skip - limit }}&limit={{ limit }}&search={{ search }}&status_filter={{ status_filter }}">Назад</a>
+      {% endif %}
+      {% if current_page < pages %}
+      <a class="btn btn-outline" href="/admin/support?skip={{ skip + limit }}&limit={{ limit }}&search={{ search }}&status_filter={{ status_filter }}">Вперёд</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

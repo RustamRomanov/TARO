@@ -1,0 +1,171 @@
+{% extends "admin/base.html" %}
+{% block title %}Токены AI - Astrov Админ{% endblock %}
+{% block page_title_class %}{% endblock %}
+{% block page_title %}Токены AI{% endblock %}
+
+{% block content %}
+<div class="finance-block">
+  <div class="block-title"><i class="fas fa-coins"></i> Расходы за период</div>
+  <p style="font-size: 0.8rem; color: var(--astrov-muted); margin: 0 0 0.65rem 0;">
+    Курс USD/RUB обновляется автоматически (ЦБ РФ): {{ "%.4f"|format(exchange_rate or 0) }}
+    {% if exchange_rate_updated_at %} · обновлено {{ exchange_rate_updated_at.strftime('%d.%m.%Y %H:%M') }}{% endif %}
+  </p>
+  <div class="tabs" id="periodTabs">
+    <a href="?period=day" class="btn btn-outline {% if period == 'day' %}active{% endif %}" style="text-decoration: none;">День</a>
+    <a href="?period=week" class="btn btn-outline {% if period == 'week' %}active{% endif %}" style="text-decoration: none;">Неделя</a>
+    <a href="?period=month" class="btn btn-outline {% if period == 'month' %}active{% endif %}" style="text-decoration: none;">Месяц</a>
+    <a href="?period=all" class="btn btn-outline {% if period == 'all' %}active{% endif %}" style="text-decoration: none;">Всё время</a>
+  </div>
+  <div class="grid grid-4" style="margin-top: 0.75rem;">
+    <div class="kpi-card"><div class="kpi-value">{{ "%.2f"|format(stats.total_rub) }} ₽</div><div class="kpi-label">Расход (руб.)</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ "{:,}".format(stats.total_tokens) }}</div><div class="kpi-label">Токенов</div></div>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-bottom: 1rem;">
+  <div class="card">
+    <div class="card-title">По дням (руб.)</div>
+    <div class="chart-container">
+      <canvas id="dailyChart"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">По типам функций</div>
+    <div class="chart-container sm">
+      <canvas id="featureChart"></canvas>
+    </div>
+  </div>
+</div>
+<div class="card" style="margin-bottom: 1rem;">
+  <div class="card-title">По провайдерам</div>
+  <div class="chart-container sm">
+    <canvas id="providerChart"></canvas>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Детализация</div>
+  <form method="get" action="/admin/token-stats" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+    <input type="hidden" name="period" value="{{ period }}">
+    <div class="form-group" style="margin: 0;">
+      <label>user_id</label>
+      <input type="number" name="user_id" value="{{ user_id_filter or '' }}" placeholder="ID" style="width: 100px;">
+    </div>
+    <div class="form-group" style="margin: 0;">
+      <label>Тип</label>
+      <select name="feature">
+        <option value="">-</option>
+        <option value="face" {% if feature_filter == 'face' %}selected{% endif %}>face</option>
+        <option value="tarot" {% if feature_filter == 'tarot' %}selected{% endif %}>tarot</option>
+        <option value="dream" {% if feature_filter == 'dream' %}selected{% endif %}>dream</option>
+        <option value="vision" {% if feature_filter == 'vision' %}selected{% endif %}>vision</option>
+        <option value="numerology" {% if feature_filter == 'numerology' %}selected{% endif %}>numerology</option>
+        <option value="astrology" {% if feature_filter == 'astrology' %}selected{% endif %}>astrology</option>
+        <option value="compatibility" {% if feature_filter == 'compatibility' %}selected{% endif %}>compatibility</option>
+        <option value="palm" {% if feature_filter == 'palm' %}selected{% endif %}>palm</option>
+      </select>
+    </div>
+    <div style="display: flex; align-items: flex-end;">
+      <button type="submit" class="btn btn-primary">Применить</button>
+    </div>
+  </form>
+  <p style="font-size: 0.8rem; color: var(--astrov-muted); margin-bottom: 0.5rem;">Всего записей: {{ total_details }}</p>
+  <div style="margin-bottom: 0.5rem;">
+    <a href="/admin/api/token-stats/csv?period={{ period }}{% if user_id_filter %}&user_id={{ user_id_filter }}{% endif %}{% if feature_filter %}&feature={{ feature_filter }}{% endif %}" class="btn btn-outline" download>Экспорт CSV</a>
+  </div>
+  <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>user_id</th>
+          <th>Тип</th>
+          <th>Провайдер</th>
+          <th>Модель</th>
+          <th>Токены</th>
+          <th>₽</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in stats.details %}
+        <tr>
+          <td>{{ d.created_at[:19] if d.created_at else '-' }}</td>
+          <td>{{ d.user_id or '-' }}</td>
+          <td>{{ d.feature_type or '-' }}</td>
+          <td>{{ d.provider or '-' }}</td>
+          <td>{{ d.model or '-' }}</td>
+          <td>{{ d.total_tokens or 0 }}</td>
+          <td>{{ "%.2f"|format(d.cost_rub or 0) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="tabs" style="margin-top: 0.75rem;">
+    {% set current_page = (skip // limit) + 1 if limit else 1 %}
+    {% set total_pages = ((total_details + limit - 1) // limit) if limit else 1 %}
+    {% if skip >= limit %}
+    <a href="?period={{ period }}&skip={{ skip - limit }}&limit={{ limit }}{% if user_id_filter %}&user_id={{ user_id_filter }}{% endif %}{% if feature_filter %}&feature={{ feature_filter }}{% endif %}" class="btn btn-outline">← Назад</a>
+    {% endif %}
+    <span style="align-self: center;">Стр. {{ current_page }} / {{ total_pages }}</span>
+    {% if skip + limit < total_details %}
+    <a href="?period={{ period }}&skip={{ skip + limit }}&limit={{ limit }}{% if user_id_filter %}&user_id={{ user_id_filter }}{% endif %}{% if feature_filter %}&feature={{ feature_filter }}{% endif %}" class="btn btn-outline">Вперёд →</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const daily = {{ stats.daily | tojson }};
+  const byFeature = {{ stats.by_feature | tojson }};
+  const byProvider = {{ stats.by_provider | tojson }};
+
+  if (document.getElementById('dailyChart') && daily.length) {
+    new Chart(document.getElementById('dailyChart'), {
+      type: 'line',
+      data: {
+        labels: daily.map(d => d.date),
+        datasets: [
+          { label: '₽', data: daily.map(d => d.rub), borderColor: 'rgba(251,191,36,0.9)', backgroundColor: 'rgba(251,191,36,0.1)', fill: true },
+          { label: 'Токены', data: daily.map(d => d.tokens), borderColor: 'rgba(16,185,129,0.8)', backgroundColor: 'rgba(16,185,129,0.05)', fill: true, yAxisID: 'y1' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true },
+          y1: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+  }
+
+  if (document.getElementById('featureChart') && byFeature.length) {
+    const colors = ['#fbbf24', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'];
+    new Chart(document.getElementById('featureChart'), {
+      type: 'doughnut',
+      data: {
+        labels: byFeature.map(f => f.feature || '-'),
+        datasets: [{ data: byFeature.map(f => f.rub), backgroundColor: byFeature.map((_, i) => colors[i % colors.length]) }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
+
+  if (document.getElementById('providerChart') && byProvider.length) {
+    const colors = ['#fbbf24', '#10b981', '#3b82f6'];
+    new Chart(document.getElementById('providerChart'), {
+      type: 'doughnut',
+      data: {
+        labels: byProvider.map(p => p.provider || '-'),
+        datasets: [{ data: byProvider.map(p => p.rub), backgroundColor: byProvider.map((_, i) => colors[i % colors.length]) }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,272 @@
+{% extends "admin/base.html" %}
+{% block title %}Пользователи - Astrov Админ{% endblock %}
+{% block page_title_class %}{% endblock %}
+{% block page_title %}Пользователи{% endblock %}
+
+{% block content %}
+<div class="card">
+  <form method="get" action="/admin/users" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <input type="search" name="search" value="{{ search }}" placeholder="ID, имя, username..." style="flex: 1; min-width: 200px; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--astrov-border); background: var(--astrov-bg-elevated); color: var(--astrov-text);">
+    <input type="hidden" name="visit_sort" value="{{ visit_sort }}">
+    <select name="visit_segment" style="min-width: 180px; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--astrov-border); background: var(--astrov-bg-elevated); color: var(--astrov-text);">
+      <option value="" {% if not visit_segment %}selected{% endif %}>Вход: все</option>
+      <option value="day" {% if visit_segment == 'day' %}selected{% endif %}>день</option>
+      <option value="week" {% if visit_segment == 'week' %}selected{% endif %}>неделя</option>
+      <option value="month" {% if visit_segment == 'month' %}selected{% endif %}>месяц</option>
+      <option value="year" {% if visit_segment == 'year' %}selected{% endif %}>год</option>
+    </select>
+    <select name="bot_filter" style="min-width: 200px; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid var(--astrov-border); background: var(--astrov-bg-elevated); color: var(--astrov-text);">
+      <option value="" {% if not bot_filter %}selected{% endif %}>Бот: все</option>
+      <option value="active" {% if bot_filter == 'active' %}selected{% endif %}>чат с ботом открыт</option>
+      <option value="stopped" {% if bot_filter == 'stopped' %}selected{% endif %}>остановили / заблокировали</option>
+    </select>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Найти</button>
+  </form>
+  <p style="color: var(--astrov-muted); font-size: 0.875rem;">Всего: {{ total }}</p>
+  <style>
+    .users-table .col-visit { background: rgba(244, 114, 182, 0.1); }
+    .users-table .col-user { background: rgba(251, 191, 36, 0.08); }
+    .users-table .col-profile { background: rgba(16, 185, 129, 0.08); }
+    .users-table .col-billing { background: rgba(99, 102, 241, 0.08); }
+    .users-table tr.row-currently-active { background: rgba(239, 68, 68, 0.25) !important; box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.6); }
+    .users-table tr.row-currently-active td { background: inherit !important; }
+    .users-table { table-layout: fixed; width: 100%; min-width: 1080px; }
+    .users-table thead th { position: relative; white-space: nowrap; user-select: none; }
+    .users-table tbody tr { height: 3.2em; }
+    .users-table tbody td {
+      line-height: 1.2;
+      max-height: 2.4em;
+      overflow: hidden;
+      vertical-align: middle;
+      white-space: normal;
+      text-overflow: ellipsis;
+    }
+    .users-table .clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.2;
+      max-height: 2.4em;
+      word-break: break-word;
+    }
+    .users-table .col-resizer {
+      position: absolute;
+      top: 0;
+      right: -5px;
+      width: 10px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 3;
+    }
+    .users-table .col-resizer::before {
+      content: '';
+      position: absolute;
+      top: 15%;
+      bottom: 15%;
+      left: 4px;
+      width: 1px;
+      background: rgba(251, 191, 36, 0.35);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    .users-table thead th:hover .col-resizer::before { opacity: 1; }
+    .users-table .is-resizing {
+      background: rgba(251, 191, 36, 0.14) !important;
+    }
+    .users-table .col-visit .visit-cell-inner {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: nowrap;
+      max-width: 100%;
+    }
+    .users-table .visit-bot-led {
+      flex-shrink: 0;
+      width: 9px;
+      height: 9px;
+    }
+    .users-table .visit-bot-led--stopped {
+      background: #991b1b;
+      border-radius: 2px;
+    }
+    .users-table .visit-bot-led--ok {
+      background: #16a34a;
+      border-radius: 50%;
+    }
+  </style>
+  <div style="overflow-x: auto;">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th class="col-visit">
+            <a
+              href="?skip=0{% if search %}&search={{ search }}{% endif %}{% if visit_segment %}&visit_segment={{ visit_segment }}{% endif %}{% if bot_filter %}&bot_filter={{ bot_filter }}{% endif %}{% if visit_sort == 'desc' %}&visit_sort=asc{% else %}&visit_sort=desc{% endif %}"
+              title="Сортировать по посещаемости. Красный квадрат: бот остановлен. Зелёный круг: чат с ботом открыт."
+              style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
+            >
+              Вход
+              {% if visit_sort == 'desc' %}
+                <span style="font-size: 0.75rem; color: var(--astrov-accent);" aria-hidden>▼</span>
+              {% elif visit_sort == 'asc' %}
+                <span style="font-size: 0.75rem; color: var(--astrov-accent);" aria-hidden>▲</span>
+              {% else %}
+                <span style="font-size: 0.75rem; opacity: 0.6;" aria-hidden>⇅</span>
+              {% endif %}
+            </a>
+          </th>
+          <th class="col-user">ID</th>
+          <th class="col-user">Имя</th>
+          <th class="col-user">Username</th>
+          <th class="col-profile">Профиль</th>
+          <th class="col-profile">Пол</th>
+          <th class="col-profile">Возраст</th>
+          <th class="col-profile">Город</th>
+          <th class="col-billing">Баланс</th>
+          <th class="col-billing">Пополнение</th>
+          <th class="col-billing">Тариф</th>
+          <th class="col-billing">Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr class="{% if u.is_currently_active %}row-currently-active{% endif %}"{% if u.is_currently_active %} title="Сейчас в приложении"{% endif %}>
+          <td class="col-visit">
+            <span class="visit-cell-inner">
+              {% if u.bot_stopped_at %}
+                <span
+                  class="visit-bot-led visit-bot-led--stopped"
+                  title="{{ u.bot_stopped_detail or 'остановил бота' }}{% if u.bot_member_status %} ({{ u.bot_member_status }}){% endif %}{% if u.bot_stopped_at %}, {{ u.bot_stopped_at[:19] }} UTC{% endif %}"
+                  aria-label="Бот остановлен"
+                ></span>
+              {% else %}
+                <span class="visit-bot-led visit-bot-led--ok" title="Чат с ботом открыт" aria-label="Чат с ботом открыт"></span>
+              {% endif %}
+              {% if u.is_currently_active %}
+                <span class="badge" style="background: #dc2626; color: white;" title="Сейчас в приложении">сейчас</span>
+              {% elif u.visit_segment == 'day' %}
+                <span class="badge badge-success">{{ u.visit_segment_label }}</span>
+              {% elif u.visit_segment == 'week' %}
+                <span class="badge badge-warning">{{ u.visit_segment_label }}</span>
+              {% elif u.visit_segment == 'month' %}
+                <span class="badge badge-secondary">{{ u.visit_segment_label }}</span>
+              {% elif u.visit_segment == 'year' %}
+                <span class="badge badge-secondary">{{ u.visit_segment_label }}</span>
+              {% else %}
+                <span class="badge badge-secondary">{{ u.visit_segment_label }}</span>
+              {% endif %}
+            </span>
+          </td>
+          <td class="col-user">{{ u.telegram_id }}</td>
+          <td class="col-user">{{ (u.name or u.full_name) or '-' }}</td>
+          <td class="col-user">@{{ u.username or '-' }}</td>
+          <td class="col-profile">{{ u.profile_name or '-' }}</td>
+          <td class="col-profile">{% if u.gender == 'm' %}М{% elif u.gender == 'f' %}Ж{% else %}-{% endif %}</td>
+          <td class="col-profile">{{ u.age if u.age is not none else '-' }}</td>
+          <td class="col-profile"><span class="clamp-2" title="{{ u.birth_city or '-' }}">{{ u.birth_city or '-' }}</span></td>
+          <td class="col-billing">{{ (u.balance_cents or 0) // 100 }} ₽</td>
+          <td class="col-billing">{{ (u.total_topup_cents or 0) // 100 }} ₽</td>
+          <td class="col-billing">
+            {% if u.status == 'full_access' %}<span class="badge badge-success">Полный</span>
+            {% elif u.status == 'trial' %}<span class="badge badge-warning">Пробный</span>
+            {% else %}<span class="badge badge-secondary">тариф</span>{% endif %}
+            {% if u.subscription_end_date %}<br><small style="color: var(--astrov-muted);">до {{ u.subscription_end_date[:10] }}</small>{% endif %}
+          </td>
+          <td class="col-billing">
+            <a href="/admin/users/{{ u.telegram_id }}/edit" class="btn btn-outline" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;"><i class="fas fa-edit"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pages > 1 %}
+  <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    {% if current_page > 1 %}
+    <a href="?skip={{ (current_page - 2) * limit }}{% if search %}&search={{ search }}{% endif %}{% if visit_segment %}&visit_segment={{ visit_segment }}{% endif %}{% if bot_filter %}&bot_filter={{ bot_filter }}{% endif %}{% if visit_sort %}&visit_sort={{ visit_sort }}{% endif %}" class="btn btn-outline">← Назад</a>
+    {% endif %}
+    <span style="align-self: center; color: var(--astrov-muted);">Стр. {{ current_page }} из {{ pages }}</span>
+    {% if current_page < pages %}
+    <a href="?skip={{ current_page * limit }}{% if search %}&search={{ search }}{% endif %}{% if visit_segment %}&visit_segment={{ visit_segment }}{% endif %}{% if bot_filter %}&bot_filter={{ bot_filter }}{% endif %}{% if visit_sort %}&visit_sort={{ visit_sort }}{% endif %}" class="btn btn-outline">Вперёд →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function initUsersColumnResize() {
+    const table = document.querySelector('.users-table');
+    if (!table) return;
+    const headers = Array.from(table.querySelectorAll('thead th'));
+    if (!headers.length) return;
+
+    const STORAGE_KEY = 'astrov_admin_users_col_widths_v1';
+    const MIN_WIDTH = 72;
+
+    const loadSavedWidths = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (_) {
+        return [];
+      }
+    };
+
+    const saveWidths = () => {
+      try {
+        const widths = headers.map((th) => Math.round(th.getBoundingClientRect().width));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(widths));
+      } catch (_) {}
+    };
+
+    const saved = loadSavedWidths();
+    headers.forEach((th, idx) => {
+      const w = Number(saved[idx] || 0);
+      if (w > MIN_WIDTH) {
+        th.style.width = `${w}px`;
+        th.style.minWidth = `${w}px`;
+      }
+    });
+
+    headers.forEach((th) => {
+      const resizer = document.createElement('span');
+      resizer.className = 'col-resizer';
+      resizer.setAttribute('aria-hidden', 'true');
+      th.appendChild(resizer);
+
+      resizer.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startWidth = th.getBoundingClientRect().width;
+        th.classList.add('is-resizing');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        const onMove = (moveEvent) => {
+          const delta = moveEvent.clientX - startX;
+          const nextWidth = Math.max(MIN_WIDTH, Math.round(startWidth + delta));
+          th.style.width = `${nextWidth}px`;
+          th.style.minWidth = `${nextWidth}px`;
+        };
+
+        const onUp = () => {
+          th.classList.remove('is-resizing');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+          saveWidths();
+        };
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+      });
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход в админку - Astrov</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @font-face {
+      font-family: 'Bion';
+      src: url('/fonts/Bion-Book.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    :root {
+      --astrov-bg: #0b0b1e;
+      --astrov-bg-card: rgba(8, 8, 28, 0.95);
+      --astrov-border: rgba(251, 191, 36, 0.25);
+      --astrov-accent: #fbbf24;
+      --astrov-danger: #ef4444;
+      --astrov-text: rgba(255,255,255,0.92);
+      --astrov-muted: rgba(255,255,255,0.82);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Bion', system-ui, sans-serif;
+      background: var(--astrov-bg);
+      color: var(--astrov-text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-image: radial-gradient(ellipse 80% 70% at 50% 10%, rgba(251, 191, 36, 0.08), transparent 50%);
+    }
+    .login-card {
+      width: 100%;
+      max-width: 360px;
+      padding: 2rem;
+      background: var(--astrov-bg-card);
+      border: 1px solid var(--astrov-border);
+      border-radius: 12px;
+    }
+    .login-card h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 1.5rem;
+      color: var(--astrov-accent);
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.85rem;
+      color: var(--astrov-muted);
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--astrov-border);
+      background: rgba(15, 15, 35, 0.6);
+      color: var(--astrov-text);
+      font-size: 1rem;
+      font-family: inherit;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--astrov-accent);
+    }
+    .form-group input.is-invalid {
+      border-color: var(--astrov-danger);
+    }
+    .invalid-feedback {
+      font-size: 0.8rem;
+      color: var(--astrov-danger);
+      margin-top: 0.25rem;
+    }
+    .btn-submit {
+      width: 100%;
+      padding: 0.65rem 1rem;
+      margin-top: 0.5rem;
+      border: none;
+      border-radius: 8px;
+      background: rgba(251, 191, 36, 0.2);
+      color: var(--astrov-accent);
+      border: 1px solid var(--astrov-border);
+      font-size: 1rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-submit:hover {
+      background: rgba(251, 191, 36, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h1><i class="fas fa-star"></i> Astrov Admin</h1>
+    <form method="post" action="/admin/login" autocomplete="off">
+      <div class="form-group">
+        <label for="username">Логин</label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          placeholder="Введите логин"
+          autocomplete="off"
+          {% if error %}class="is-invalid"{% endif %}
+        >
+        {% if error %}<div class="invalid-feedback">{{ error }}</div>{% endif %}
+      </div>
+      <div class="form-group">
+        <label for="password">Пароль</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="Введите пароль"
+          autocomplete="off"
+          {% if error %}class="is-invalid"{% endif %}
+        >
+      </div>
+      <button type="submit" class="btn-submit">Войти</button>
+    </form>
+  </div>
+</body>
+</html>

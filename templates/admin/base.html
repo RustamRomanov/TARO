@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Astrov - Админ{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    @font-face {
+      font-family: 'Bion';
+      src: url('/fonts/Bion-Book.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    :root {
+      --astrov-bg: #0b0b1e;
+      --astrov-bg-card: rgba(8, 8, 28, 0.95);
+      --astrov-bg-elevated: rgba(15, 15, 35, 0.98);
+      --astrov-border: rgba(251, 191, 36, 0.25);
+      --astrov-accent: #fbbf24;
+      --astrov-accent-dim: rgba(251, 191, 36, 0.6);
+      --astrov-success: #10b981;
+      --astrov-danger: #ef4444;
+      --astrov-warning: #f59e0b;
+      --astrov-text: rgba(255,255,255,0.92);
+      --astrov-muted: rgba(255,255,255,0.82);
+      --astrov-radius: 8px;
+      --astrov-radius-sm: 6px;
+      --sidebar-w: 56px;
+    }
+    * { box-sizing: border-box; }
+    html { font-size: 17px; }
+    body { margin: 0; font-family: 'Bion', system-ui, sans-serif; font-size: 1rem; background: var(--astrov-bg); color: var(--astrov-text); min-height: 100vh; }
+    body.dashboard-page { background-image: radial-gradient(ellipse 80% 70% at 50% 10%, rgba(251, 191, 36, 0.06), transparent 50%); }
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: var(--sidebar-w); background: var(--astrov-bg-card); border-right: 1px solid var(--astrov-border);
+      display: flex; flex-direction: column; flex-shrink: 0; align-items: center; padding: 0.5rem 0;
+    }
+    .sidebar-brand { font-family: 'Cinzel', serif; font-weight: 600; font-size: 0.95rem; color: var(--astrov-accent); padding: 0.75rem 0; letter-spacing: 0.08em; }
+    .sidebar-nav { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; flex: 1; }
+    .sidebar-nav a {
+      display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; color: var(--astrov-muted);
+      text-decoration: none; border-radius: var(--astrov-radius-sm); transition: color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .sidebar-nav a:hover { color: var(--astrov-accent); background: rgba(251, 191, 36, 0.1); }
+    .sidebar-nav a.active { color: var(--astrov-accent); background: rgba(251, 191, 36, 0.12); }
+    .sidebar-nav a i { font-size: 1.1rem; }
+    .nav-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      padding: 0 4px;
+      background: rgba(239, 68, 68, 0.94);
+      color: #fff;
+      font-size: 0.62rem;
+      line-height: 16px;
+      font-weight: 700;
+      text-align: center;
+      display: none;
+      box-shadow: 0 0 0 1px rgba(11, 11, 30, 0.8);
+    }
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: auto; min-width: 0; }
+    .topbar {
+      height: 52px; background: var(--astrov-bg-card); border-bottom: 1px solid var(--astrov-border);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; flex-shrink: 0;
+    }
+    .topbar h1 { margin: 0; font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 600; color: var(--astrov-text); }
+    .topbar h1.empty { visibility: hidden; font-size: 0; }
+    .topbar-actions { display: flex; align-items: center; gap: 0.5rem; }
+    .topbar-actions form { margin: 0; }
+    .btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.75rem; border-radius: var(--astrov-radius); font-size: 0.8rem; font-weight: 500; cursor: pointer; border: none; text-decoration: none; transition: background 0.2s, color 0.2s; font-family: 'Bion', sans-serif; }
+    .btn-primary { background: rgba(251, 191, 36, 0.2); color: var(--astrov-accent); border: 1px solid var(--astrov-border); }
+    .btn-primary:hover { background: rgba(251, 191, 36, 0.3); }
+    .btn-outline { background: transparent; color: var(--astrov-accent); border: 1px solid var(--astrov-border); }
+    .btn-outline:hover { background: rgba(251, 191, 36, 0.1); }
+    .btn-danger { background: var(--astrov-danger); color: #fff; }
+    .content { padding: 1rem; flex: 1; }
+    .content.dashboard-content { padding: 0.75rem; max-height: calc(100vh - 52px); overflow: hidden; display: flex; flex-direction: column; }
+    .card {
+      background: var(--astrov-bg-card); border: 1px solid var(--astrov-border); border-radius: var(--astrov-radius);
+      padding: 1rem; margin-bottom: 1rem;
+    }
+    .card-title { font-family: 'Cinzel', serif; font-size: 0.9rem; font-weight: 600; margin: 0 0 0.75rem 0; color: var(--astrov-text); }
+    .grid { display: grid; gap: 0.75rem; }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 1200px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px)  { .grid-4 { grid-template-columns: 1fr; } .grid-2 { grid-template-columns: 1fr; } .sidebar { width: 48px; } .sidebar-nav a { width: 36px; height: 36px; } }
+    .kpi-card { padding: 0.75rem 1rem; background: var(--astrov-bg-card); border: 1px solid var(--astrov-border); border-radius: var(--astrov-radius); }
+    .kpi-card .kpi-value { font-size: 1.35rem; font-weight: 700; color: var(--astrov-text); font-family: 'Bion', sans-serif; }
+    .kpi-card .kpi-label { font-size: 0.7rem; color: var(--astrov-muted); margin-top: 0.15rem; }
+    .finance-block { background: linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(251, 191, 36, 0.03) 100%); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: var(--astrov-radius); padding: 1rem; margin-bottom: 1rem; }
+    .finance-block .block-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.75rem; color: var(--astrov-accent); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--astrov-border); }
+    th { font-weight: 600; color: var(--astrov-muted); font-size: 0.7rem; text-transform: uppercase; }
+    tr:hover td { background: rgba(251, 191, 36, 0.04); }
+    .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 500; }
+    .badge-success { background: rgba(16,185,129,0.2); color: var(--astrov-success); }
+    .badge-warning { background: rgba(245,158,11,0.2); color: var(--astrov-warning); }
+    .badge-secondary { background: rgba(255,255,255,0.1); color: var(--astrov-muted); }
+    .form-group { margin-bottom: 0.75rem; }
+    .form-group label { display: block; margin-bottom: 0.25rem; font-size: 0.8rem; color: var(--astrov-muted); }
+    .form-group input, .form-group select { width: 100%; max-width: 280px; padding: 0.45rem 0.6rem; border-radius: 6px; border: 1px solid var(--astrov-border); background: var(--astrov-bg-elevated); color: var(--astrov-text); font-size: 0.8rem; font-family: 'Bion', sans-serif; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--astrov-accent); }
+    .alert { padding: 0.6rem 0.85rem; border-radius: var(--astrov-radius); margin-bottom: 0.75rem; font-size: 0.85rem; }
+    .alert-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+    .alert-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+    .chart-container { position: relative; height: 200px; }
+    .chart-container.sm { height: 160px; }
+    .tabs { display: flex; gap: 0.35rem; margin-bottom: 0.75rem; }
+    .tabs button { padding: 0.35rem 0.65rem; border-radius: 6px; border: 1px solid var(--astrov-border); background: var(--astrov-bg-elevated); color: var(--astrov-muted); cursor: pointer; font-size: 0.75rem; font-family: 'Bion', sans-serif; }
+    .tabs button.active { background: rgba(251, 191, 36, 0.15); color: var(--astrov-accent); border-color: var(--astrov-accent-dim); }
+    .tabs button:hover:not(.active) { color: var(--astrov-text); }
+    .astrov-empty-state { text-align: center; padding: 2.5rem 1.5rem; color: var(--astrov-muted); }
+    .astrov-empty-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.6; }
+    .astrov-empty-title { font-size: 1rem; font-weight: 600; color: var(--astrov-text); margin: 0 0 0.5rem 0; }
+    .astrov-empty-text { font-size: 0.9rem; margin: 0; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">A</div>
+      <nav class="sidebar-nav">
+        <a href="/admin/dashboard" class="{% if request.url.path == '/admin/dashboard' %}active{% endif %}" title="Главная"><i class="fas fa-chart-line"></i></a>
+        <a href="/admin/users" class="{% if request.url.path.startswith('/admin/users') and '/edit' not in request.url.path %}active{% endif %}" title="Пользователи"><i class="fas fa-users"></i></a>
+        <a href="/admin/stats" class="{% if request.url.path == '/admin/stats' %}active{% endif %}" title="Статистика"><i class="fas fa-chart-pie"></i></a>
+        <a href="/admin/finance" class="{% if request.url.path == '/admin/finance' %}active{% endif %}" title="Финансы"><i class="fas fa-wallet"></i></a>
+        <a href="/admin/token-stats" class="{% if request.url.path.startswith('/admin/token-stats') %}active{% endif %}" title="Токены AI"><i class="fas fa-brain"></i></a>
+        <a href="/admin/support" class="{% if request.url.path.startswith('/admin/support') %}active{% endif %}" title="Обращения">
+          <i class="fas fa-envelope"></i>
+          <span id="supportUnreadBadge" class="nav-badge">0</span>
+        </a>
+      </nav>
+    </aside>
+    <div class="main-wrap">
+      <header class="topbar">
+        <h1 class="{% block page_title_class %}empty{% endblock %}">{% block page_title %}{% endblock %}</h1>
+        <div class="topbar-actions">
+          {% block topbar %}{% endblock %}
+          <a href="/admin/logout" class="btn btn-outline" style="font-size: 0.75rem;" title="Выйти"><i class="fas fa-sign-out-alt"></i> Выход</a>
+        </div>
+      </header>
+      <main class="content {% block content_class %}{% endblock %}">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+  {% block scripts %}{% endblock %}
+  <script>
+    (function initSupportUnreadBadge() {
+      const badge = document.getElementById('supportUnreadBadge');
+      if (!badge) return;
+      const applyCount = (count) => {
+        const n = Number(count) || 0;
+        if (n > 0) {
+          badge.textContent = n > 99 ? '99+' : String(n);
+          badge.style.display = 'inline-block';
+          return;
+        }
+        badge.textContent = '0';
+        badge.style.display = 'none';
+      };
+      const loadCount = async () => {
+        try {
+          const res = await fetch('/admin/support/unread-count', {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' },
+            cache: 'no-store',
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          applyCount(data?.count);
+        } catch (_) {}
+      };
+      loadCount();
+      window.setInterval(loadCount, 30000);
+    })();
+  </script>
+</body>
+</html>

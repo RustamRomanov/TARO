@@ -1,0 +1,101 @@
+{% extends "admin/base.html" %}
+{% block title %}Astrov - Обращение #{{ details.feedback.id }}{% endblock %}
+{% block page_title_class %}{% endblock %}
+{% block page_title %}Обращение #{{ details.feedback.id }}{% endblock %}
+
+{% block content %}
+{% if message %}
+<div class="alert alert-success">{{ message }}</div>
+{% endif %}
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+  <h3 class="card-title">От пользователя</h3>
+  <p><strong>Кто:</strong> {{ details.profile.name if details.profile else (details.user.full_name if details.user else "-") }} (ID {{ details.feedback.user_id }})</p>
+  <p><strong>Username:</strong> {{ details.user.username if details.user and details.user.username else "-" }}</p>
+  <p><strong>Создано:</strong> {{ details.feedback.created_at.strftime("%d.%m.%Y %H:%M") if details.feedback.created_at else "-" }}</p>
+  <div style="margin-top:.75rem;padding:.75rem;border:1px solid var(--astrov-border);border-radius:8px;background:rgba(255,255,255,.02);white-space:pre-wrap;">
+    {{ details.feedback.message }}
+  </div>
+  {% if details.attachments %}
+  <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+    {% for item in details.attachments %}
+      {% if item.role == "user" %}
+      <a href="{{ item.image_path }}" target="_blank" rel="noopener noreferrer">
+        <img src="{{ item.image_path }}" alt="attachment" style="max-width:200px;border-radius:8px;border:1px solid var(--astrov-border);" />
+      </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3 class="card-title">Статус</h3>
+  <form method="post" action="/admin/support/{{ details.feedback.id }}/status" style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+    <div class="form-group">
+      <label for="read_state">Прочитано</label>
+      <select id="read_state" name="read_state">
+        <option value="unread" {% if details.read_state == "unread" %}selected{% endif %}>непрочитано</option>
+        <option value="read" {% if details.read_state == "read" %}selected{% endif %}>прочитано</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="resolved_state">Решение</label>
+      <select id="resolved_state" name="resolved_state">
+        <option value="unresolved" {% if details.resolved_state == "unresolved" %}selected{% endif %}>не решено</option>
+        <option value="resolved" {% if details.resolved_state == "resolved" %}selected{% endif %}>решено</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" type="submit">Сохранить статус</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3 class="card-title">Ответ пользователю</h3>
+  <form method="post" action="/admin/support/{{ details.feedback.id }}/reply" enctype="multipart/form-data">
+    <div class="form-group">
+      <label for="reply_text">Текст ответа</label>
+      <textarea id="reply_text" name="reply_text" rows="5" style="width:100%;max-width:100%;padding:.6rem;border-radius:6px;border:1px solid var(--astrov-border);background:var(--astrov-bg-elevated);color:var(--astrov-text);font-family:'Bion',sans-serif;"></textarea>
+    </div>
+    <div class="form-group">
+      <label for="image">Изображение (до 2 МБ)</label>
+      <input id="image" type="file" name="image" accept="image/png,image/jpeg,image/webp" />
+    </div>
+    <label style="display:flex;gap:.5rem;align-items:center;margin:.5rem 0 1rem;">
+      <input type="checkbox" name="mark_resolved" />
+      <span>Пометить как решено</span>
+    </label>
+    <button class="btn btn-primary" type="submit">Отправить ответ в бота</button>
+    <a class="btn btn-outline" href="/admin/support/user/{{ details.feedback.user_id }}" style="margin-left:.5rem;">Вся ветка</a>
+    <a class="btn btn-outline" href="/admin/support" style="margin-left:.5rem;">К списку</a>
+  </form>
+</div>
+
+{% if details.replies %}
+<div class="card">
+  <h3 class="card-title">История ответов</h3>
+  <div style="display:flex;flex-direction:column;gap:.75rem;">
+    {% for reply in details.replies %}
+    <div style="padding:.75rem;border:1px solid var(--astrov-border);border-radius:8px;background:rgba(255,255,255,.02);">
+      <div style="font-size:.75rem;color:var(--astrov-muted);margin-bottom:.35rem;">
+        {{ reply.created_at.strftime("%d.%m.%Y %H:%M") if reply.created_at else "-" }}
+      </div>
+      <div style="white-space:pre-wrap;">{{ reply.message }}</div>
+    </div>
+    {% endfor %}
+    {% for item in details.attachments %}
+      {% if item.role == "admin" %}
+      <div>
+        <a href="{{ item.image_path }}" target="_blank" rel="noopener noreferrer">
+          <img src="{{ item.image_path }}" alt="admin-attachment" style="max-width:220px;border-radius:8px;border:1px solid var(--astrov-border);" />
+        </a>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

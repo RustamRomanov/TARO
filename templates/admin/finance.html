@@ -1,0 +1,258 @@
+{% extends "admin/base.html" %}
+{% block title %}Финансы - Astrov Админ{% endblock %}
+{% block page_title_class %}{% endblock %}
+{% block page_title %}Финансы{% endblock %}
+
+{% block content %}
+<div class="finance-block">
+  <div class="block-title"><i class="fas fa-wallet"></i> Поступления</div>
+  <div class="grid grid-4" style="margin-bottom: 1rem;">
+    <div class="kpi-card"><div class="kpi-value">{{ "%.0f"|format(revenue_totals.day) }} ₽</div><div class="kpi-label">За день</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ "%.0f"|format(revenue_totals.week) }} ₽</div><div class="kpi-label">За неделю</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ "%.0f"|format(revenue_totals.month) }} ₽</div><div class="kpi-label">За месяц</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ "%.0f"|format(revenue_totals.total) }} ₽</div><div class="kpi-label">Всего</div></div>
+  </div>
+  <div class="tabs" id="revenuePeriodTabs">
+    <button type="button" class="active" data-period="day">День</button>
+    <button type="button" data-period="month">Месяц</button>
+  </div>
+  <div class="chart-container">
+    <canvas id="revenueChart"></canvas>
+  </div>
+</div>
+
+<div class="finance-block">
+  <div class="block-title"><i class="fas fa-gift"></i> Бонусные начисления (учёт отдельно)</div>
+  <div class="grid grid-4" style="margin-bottom: 0;">
+    <div class="kpi-card"><div class="kpi-value">{{ "%.0f"|format(bonus_totals.day) }} ₽</div><div class="kpi-label">За день</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ "%.0f"|format(bonus_totals.week) }} ₽</div><div class="kpi-label">За неделю</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ "%.0f"|format(bonus_totals.month) }} ₽</div><div class="kpi-label">За месяц</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ "%.0f"|format(bonus_totals.total) }} ₽</div><div class="kpi-label">Всего</div></div>
+  </div>
+</div>
+
+<div class="finance-block">
+  <div class="block-title"><i class="fas fa-coins"></i> Потраченные токены</div>
+  <div class="tabs" id="tokenTabs">
+    <button type="button" class="active" data-mode="all">Все</button>
+    <button type="button" data-mode="text">Текстовые</button>
+    <button type="button" data-mode="vision">Визуальные</button>
+  </div>
+  <div class="grid grid-4" id="tokensAll" style="margin-bottom: 1rem;">
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.day.all }}</div><div class="kpi-label">День</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.week.all }}</div><div class="kpi-label">Неделя</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.month.all }}</div><div class="kpi-label">Месяц</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.total.all }}</div><div class="kpi-label">Всего</div></div>
+  </div>
+  <div class="grid grid-4" id="tokensText" style="margin-bottom: 1rem; display: none;">
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.day.text }}</div><div class="kpi-label">День</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.week.text }}</div><div class="kpi-label">Неделя</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.month.text }}</div><div class="kpi-label">Месяц</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.total.text }}</div><div class="kpi-label">Всего</div></div>
+  </div>
+  <div class="grid grid-4" id="tokensVision" style="margin-bottom: 1rem; display: none;">
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.day.vision }}</div><div class="kpi-label">День</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.week.vision }}</div><div class="kpi-label">Неделя</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.month.vision }}</div><div class="kpi-label">Месяц</div></div>
+    <div class="kpi-card"><div class="kpi-value">{{ tokens_totals.total.vision }}</div><div class="kpi-label">Всего</div></div>
+  </div>
+  <div class="chart-container">
+    <canvas id="tokensChart"></canvas>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="block-title"><i class="fas fa-edit"></i> Учёт затрат по дням (комиссии, реклама, налоги - редактируемые; токены - автоматически из расхода API)</div>
+  <p style="font-size: 0.8rem; color: var(--astrov-muted); margin-bottom: 0.75rem;">Выберите месяц и введите суммы. Токены подставляются из истории запросов и не редактируются.</p>
+  {% if yookassa_commission_percent and yookassa_commission_percent > 0 %}
+  <p style="font-size: 0.8rem; color: var(--astrov-accent); margin-bottom: 0.75rem;">Комиссия ЮKassa рассчитывается автоматически при каждом платеже (ставка {{ "%.1f"|format(yookassa_commission_percent) }}% из YOOKASSA_COMMISSION_PERCENT). Можно корректировать вручную при необходимости.</p>
+  {% endif %}
+  <div style="margin-bottom: 0.75rem;">
+    {% set prev_m = table_month - 1 if table_month > 1 else 12 %}
+    {% set prev_y = table_year if table_month > 1 else table_year - 1 %}
+    {% set next_m = table_month + 1 if table_month < 12 else 1 %}
+    {% set next_y = table_year if table_month < 12 else table_year + 1 %}
+    <a href="?year={{ prev_y }}&month={{ prev_m }}" class="btn btn-outline" style="padding: 0.35rem 0.65rem;">← {{ prev_m }}/{{ prev_y }}</a>
+    <span style="margin: 0 0.75rem; font-weight: 600;">{{ table_month }} / {{ table_year }}</span>
+    <a href="?year={{ next_y }}&month={{ next_m }}" class="btn btn-outline" style="padding: 0.35rem 0.65rem;">{{ next_m }}/{{ next_y }} →</a>
+  </div>
+  <form method="post" action="/admin/finance/expenses">
+    <input type="hidden" name="_year" value="{{ table_year }}">
+    <input type="hidden" name="_month" value="{{ table_month }}">
+    <div style="overflow-x: auto;">
+      <table class="expenses-table">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Комиссии (₽)</th>
+            <th>Реклама (₽)</th>
+            <th>Налоги (₽)</th>
+            <th>Токены (₽)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in expenses_table %}
+          <tr>
+            <td>{{ row.date }}</td>
+            <td><input type="number" step="0.01" min="0" name="expense_{{ row.date }}_commission" value="{{ "%.2f"|format(row.commission) if row.commission else '' }}" placeholder="0" style="width: 100%; max-width: 90px; padding: 0.35rem; border-radius: 4px; border: 1px solid var(--astrov-border); background: var(--astrov-bg-elevated); color: var(--astrov-text); font-size: 0.85rem;"></td>
+            <td><input type="number" step="0.01" min="0" name="expense_{{ row.date }}_advertising" value="{{ "%.2f"|format(row.advertising) if row.advertising else '' }}" placeholder="0" style="width: 100%; max-width: 90px; padding: 0.35rem; border-radius: 4px; border: 1px solid var(--astrov-border); background: var(--astrov-bg-elevated); color: var(--astrov-text); font-size: 0.85rem;"></td>
+            <td><input type="number" step="0.01" min="0" name="expense_{{ row.date }}_taxes" value="{{ "%.2f"|format(row.taxes) if row.taxes else '' }}" placeholder="0" style="width: 100%; max-width: 90px; padding: 0.35rem; border-radius: 4px; border: 1px solid var(--astrov-border); background: var(--astrov-bg-elevated); color: var(--astrov-text); font-size: 0.85rem;"></td>
+            <td style="color: var(--astrov-muted); font-size: 0.85rem;">{{ "%.2f"|format(row.tokens) if row.tokens else '0' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top: 0.75rem;">Сохранить траты</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  var accent = 'rgba(251, 191, 36, 0.8)';
+  var accentFill = 'rgba(251, 191, 36, 0.15)';
+  var bonusAccent = 'rgba(59, 130, 246, 0.9)';
+  var bonusAccentFill = 'rgba(59, 130, 246, 0.05)';
+  Chart.defaults.color = 'rgba(255,255,255,0.7)';
+  Chart.defaults.borderColor = 'rgba(251, 191, 36, 0.2)';
+  Chart.defaults.font.family = "'Bion', sans-serif";
+
+  var revenueDaily = {{ revenue_series | tojson }};
+  var bonusDaily = {{ bonus_series | tojson }};
+  var revenueMonthly = {{ revenue_series_monthly | tojson }};
+  var bonusMonthly = {{ bonus_series_monthly | tojson }};
+
+  var revenueChart = new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+      labels: revenueDaily.map(function(d) { return ''; }),
+      datasets: [
+        {
+          label: 'Поступления',
+          data: revenueDaily.map(function(d) { return d.amount; }),
+          _dates: revenueDaily.map(function(d) { return d.date; }),
+          borderColor: accent,
+          backgroundColor: accentFill,
+          fill: true,
+          tension: 0.35,
+        },
+        {
+          label: 'Бонусы',
+          data: bonusDaily.map(function(d) { return d.amount; }),
+          _dates: bonusDaily.map(function(d) { return d.date; }),
+          borderColor: bonusAccent,
+          backgroundColor: bonusAccentFill,
+          borderDash: [6, 4],
+          fill: false,
+          tension: 0.35,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true },
+        tooltip: {
+          callbacks: {
+            title: function(items) {
+              var idx = items[0].dataIndex;
+              var d = revenueChart.data.datasets[0]._dates && revenueChart.data.datasets[0]._dates[idx];
+              return d ? d : '';
+            },
+            label: function(ctx) { return ctx.parsed.y + ' ₽'; }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { display: false, maxTicksLimit: 8 } },
+        y: { beginAtZero: true }
+      },
+      animation: { duration: 600 }
+    }
+  });
+
+  document.getElementById('revenuePeriodTabs').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#revenuePeriodTabs button').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    var period = btn.dataset.period;
+    var isMonth = period === 'month';
+    var revData = isMonth ? revenueMonthly : revenueDaily;
+    var bonData = isMonth ? bonusMonthly : bonusDaily;
+    revenueChart.data.labels = revData.map(function(d) { return isMonth ? d.label : ''; });
+    revenueChart.data.datasets[0].data = revData.map(function(d) { return d.amount; });
+    revenueChart.data.datasets[0]._dates = revData.map(function(d) { return d.date; });
+    revenueChart.data.datasets[1].data = bonData.map(function(d) { return d.amount; });
+    revenueChart.data.datasets[1]._dates = bonData.map(function(d) { return d.date; });
+    revenueChart.options.scales.x.ticks.display = isMonth;
+    revenueChart.update();
+  });
+
+  var tokensText = {{ tokens_text_series | tojson }};
+  var tokensVision = {{ tokens_vision_series | tojson }};
+  var tokensAllData = tokensText.map(function(d, i) { return (d.tokens || 0) + (tokensVision[i] ? tokensVision[i].tokens : 0); });
+  var tokensAllDates = tokensText.map(function(d) { return d.date; });
+
+  var tokensChart = new Chart(document.getElementById('tokensChart'), {
+    type: 'line',
+    data: {
+      labels: tokensText.map(function() { return ''; }),
+      datasets: [{
+        label: 'Токены',
+        data: tokensAllData,
+        _dates: tokensAllDates,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16,185,129,0.15)',
+        fill: true,
+        tension: 0.35,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items) {
+              var idx = items[0].dataIndex;
+              var d = tokensChart.data.datasets[0]._dates && tokensChart.data.datasets[0]._dates[idx];
+              return d ? d : '';
+            },
+            label: function(ctx) { return ctx.parsed.y + ' токенов'; }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { display: false } },
+        y: { beginAtZero: true }
+      },
+      animation: { duration: 600 }
+    }
+  });
+
+  document.getElementById('tokenTabs').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#tokenTabs button').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    var mode = btn.dataset.mode;
+    document.getElementById('tokensAll').style.display = mode === 'all' ? 'grid' : 'none';
+    document.getElementById('tokensText').style.display = mode === 'text' ? 'grid' : 'none';
+    document.getElementById('tokensVision').style.display = mode === 'vision' ? 'grid' : 'none';
+    var data = mode === 'vision' ? tokensVision : (mode === 'text' ? tokensText : null);
+    var label = mode === 'vision' ? 'Визуальные' : (mode === 'text' ? 'Текстовые' : 'Все');
+    var values = data ? data.map(function(d) { return d.tokens; }) : tokensAllData;
+    var dates = data ? data.map(function(d) { return d.date; }) : tokensAllDates;
+    tokensChart.data.datasets[0].label = label;
+    tokensChart.data.datasets[0].data = values;
+    tokensChart.data.datasets[0]._dates = dates;
+    tokensChart.update();
+  });
+})();
+</script>
+{% endblock %}

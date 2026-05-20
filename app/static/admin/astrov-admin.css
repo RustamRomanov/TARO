@@ -1,0 +1,839 @@
+/* Astrov Admin - тёмная тема в стиле приложения */
+@font-face {
+  font-family: 'Bion';
+  src: url('/fonts/Bion-Book.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --astrov-bg: #0b0b1e;
+  --astrov-bg-card: rgba(8, 8, 28, 0.95);
+  --astrov-border: rgba(251, 191, 36, 0.25);
+  --astrov-accent: #fbbf24;
+  --astrov-accent-dim: rgba(251, 191, 36, 0.6);
+  --astrov-text: rgba(255, 255, 255, 0.92);
+  --astrov-muted: rgba(255, 255, 255, 0.82);
+  --astrov-transition: 0.2s ease;
+  --astrov-radius: 10px;
+  --astrov-radius-sm: 8px;
+}
+
+html {
+  font-size: 17px !important;
+}
+
+body {
+  background: var(--astrov-bg) !important;
+  background-image: radial-gradient(ellipse 80% 70% at 50% 10%, rgba(251, 191, 36, 0.08), transparent 50%),
+    linear-gradient(180deg, #0b0b1e 0%, #060518 100%) !important;
+  color: var(--astrov-text) !important;
+  font-family: 'Bion', system-ui, sans-serif !important;
+  font-size: 1rem !important;
+}
+
+.wrapper {
+  background: transparent !important;
+}
+
+/* Боковая панель */
+.navbar-vertical.navbar-dark {
+  background: var(--astrov-bg-card) !important;
+  border-right: 1px solid var(--astrov-border) !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+.navbar-brand h3,
+.navbar-brand .navbar-brand-autodark {
+  color: var(--astrov-accent) !important;
+  font-family: 'Cinzel', serif !important;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+  transition: opacity var(--astrov-transition), transform 0.2s ease;
+}
+
+.navbar-brand a {
+  color: inherit !important;
+}
+
+.navbar-brand a:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.nav .nav-link {
+  color: var(--astrov-muted) !important;
+  border-radius: var(--astrov-radius-sm);
+  margin: 2px 6px;
+  transition: color var(--astrov-transition), background var(--astrov-transition), border-color var(--astrov-transition), transform 0.15s ease;
+}
+
+.nav .nav-link:hover {
+  color: var(--astrov-accent) !important;
+  background: rgba(251, 191, 36, 0.08) !important;
+  transform: translateX(2px);
+}
+
+.nav .nav-link.active {
+  color: var(--astrov-accent) !important;
+  background: rgba(251, 191, 36, 0.12) !important;
+  border-left: 3px solid var(--astrov-accent);
+}
+
+.nav .nav-link i {
+  color: var(--astrov-accent-dim) !important;
+}
+
+/* Кнопка выхода */
+.navbar .btn-secondary {
+  background: rgba(251, 191, 36, 0.15) !important;
+  border: 1px solid var(--astrov-border) !important;
+  color: var(--astrov-accent) !important;
+}
+
+.navbar .btn-secondary:hover {
+  background: rgba(251, 191, 36, 0.25) !important;
+  color: #fff !important;
+}
+
+/* Основная область - компактно, без растягивания на весь экран */
+.page-wrapper {
+  background: transparent !important;
+  padding: 1rem 0 !important;
+}
+.page-body .container-fluid {
+  max-width: 960px;
+  margin: 0 auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  animation: astrov-fade-in 0.35s ease;
+}
+
+@keyframes astrov-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-header .container-fluid {
+  max-width: 960px;
+  margin: 0 auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+.page-title { font-size: 1.25rem !important; }
+.page-pretitle { font-size: 0.8125rem !important; }
+
+.page-header .row {
+  align-items: baseline;
+}
+
+.row-deck.row-cards {
+  gap: 0.75rem;
+}
+
+/* Тулбар списка: симметричная сетка */
+.card-body.border-bottom .d-flex {
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.card-body.border-bottom .dropdown {
+  min-width: 0;
+}
+
+.card-body.border-bottom .input-group {
+  max-width: 320px;
+}
+
+.card-body.border-bottom .form-control {
+  border-radius: var(--astrov-radius-sm) !important;
+}
+.row-cards > .col {
+  margin-bottom: 0;
+}
+/* Карточки списков - компактно */
+.card {
+  border-radius: 10px !important;
+}
+
+.card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem !important;
+}
+
+.card-header .card-title {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 0.9375rem !important;
+}
+
+.card-header .ms-auto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.card-body.border-bottom {
+  padding: 0.75rem 1rem !important;
+}
+
+.card-footer {
+  padding: 0.75rem 1rem !important;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.card-footer .pagination {
+  margin: 0;
+}
+
+.page-title {
+  color: var(--astrov-text) !important;
+  font-family: 'Bion', sans-serif !important;
+  font-weight: 600;
+}
+
+.page-pretitle {
+  color: var(--astrov-muted) !important;
+}
+
+/* Карточки - анимация при наведении */
+.card {
+  background: var(--astrov-bg-card) !important;
+  border: 1px solid var(--astrov-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 0 20px rgba(255, 255, 255, 0.02) !important;
+  transition: box-shadow var(--astrov-transition), border-color var(--astrov-transition), transform 0.25s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3), 0 0 24px rgba(251, 191, 36, 0.06), inset 0 0 20px rgba(255, 255, 255, 0.02) !important;
+}
+
+.card-header {
+  background: rgba(251, 191, 36, 0.06) !important;
+  border-bottom: 1px solid var(--astrov-border) !important;
+  color: var(--astrov-text) !important;
+}
+
+.card-title {
+  color: var(--astrov-accent) !important;
+  font-weight: 600;
+}
+
+.card-body {
+  color: var(--astrov-text) !important;
+}
+
+/* Таблицы - читаемые колонки, без обрезки */
+.page-body .table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.page-body .card-table.text-nowrap {
+  table-layout: auto;
+  width: 100%;
+  min-width: 600px;
+}
+.page-body .card-table thead th {
+  white-space: normal !important;
+  word-break: normal;
+  min-width: 80px;
+  padding: 0.5rem 0.4rem !important;
+  font-size: 0.75rem;
+  vertical-align: middle;
+  font-weight: 600;
+}
+.page-body .card-table tbody td {
+  white-space: normal !important;
+  word-break: break-word;
+  min-width: 60px;
+  padding: 0.5rem 0.4rem !important;
+  font-size: 0.8125rem;
+  vertical-align: middle;
+}
+.page-body .card-table .w-1 { width: 2.5rem; min-width: 2.5rem; }
+
+.table {
+  color: var(--astrov-text) !important;
+}
+
+.table thead th {
+  background: rgba(251, 191, 36, 0.1) !important;
+  border-bottom: 1px solid var(--astrov-border) !important;
+  color: var(--astrov-accent) !important;
+  font-weight: 600;
+}
+
+.table thead th a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--astrov-transition), opacity 0.15s ease;
+}
+
+.table thead th a:hover {
+  color: #fff;
+  opacity: 1;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid rgba(251, 191, 36, 0.08) !important;
+  transition: background var(--astrov-transition);
+}
+
+.table tbody tr:hover {
+  background: rgba(251, 191, 36, 0.08) !important;
+}
+
+.table td {
+  border-color: rgba(251, 191, 36, 0.08) !important;
+}
+
+/* Формы и инпуты */
+.form-control,
+.form-select {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid var(--astrov-border) !important;
+  color: var(--astrov-text) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--astrov-accent) !important;
+  box-shadow: 0 0 0 0.2rem rgba(251, 191, 36, 0.2) !important;
+}
+
+.form-label {
+  color: var(--astrov-muted) !important;
+}
+
+/* Кнопки - единый стиль, скругление, анимации */
+.btn {
+  border-radius: var(--astrov-radius) !important;
+  font-weight: 500;
+  transition: transform 0.15s ease, box-shadow var(--astrov-transition), background var(--astrov-transition), border-color var(--astrov-transition), color var(--astrov-transition);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(201, 162, 39, 0.9)) !important;
+  border: 1px solid var(--astrov-accent) !important;
+  color: #0b0b1e !important;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 1), rgba(231, 181, 49, 1)) !important;
+  color: #060518 !important;
+  box-shadow: 0 4px 16px rgba(251, 191, 36, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(251, 191, 36, 0.12) !important;
+  border: 1px solid var(--astrov-border) !important;
+  color: var(--astrov-accent) !important;
+  padding: 0.5rem 1rem;
+}
+
+.btn-secondary:hover {
+  background: rgba(251, 191, 36, 0.22) !important;
+  color: #fff !important;
+  border-color: var(--astrov-accent) !important;
+  transform: translateY(-1px);
+}
+
+/* Действия, Экспорт dropdown и прочие «светлые» кнопки в теме */
+.btn-light {
+  background: rgba(251, 191, 36, 0.1) !important;
+  border: 1px solid var(--astrov-border) !important;
+  color: var(--astrov-accent) !important;
+}
+
+.btn-light:hover,
+.btn-light.dropdown-toggle:hover {
+  background: rgba(251, 191, 36, 0.2) !important;
+  color: #fff !important;
+  border-color: var(--astrov-accent) !important;
+}
+
+.dropdown-toggle::after {
+  margin-left: 0.35em;
+  opacity: 0.8;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.2)) !important;
+  border: 1px solid rgba(239, 68, 68, 0.5) !important;
+  color: #fca5a5 !important;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: transform 0.15s ease, box-shadow var(--astrov-transition);
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.35), rgba(185, 28, 28, 0.3)) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Кнопки в строке поиска */
+.input-group .btn {
+  border-radius: 0 var(--astrov-radius-sm) var(--astrov-radius-sm) 0 !important;
+  background: rgba(251, 191, 36, 0.12) !important;
+  border: 1px solid var(--astrov-border) !important;
+  color: var(--astrov-accent) !important;
+}
+
+.input-group .btn:hover {
+  background: rgba(251, 191, 36, 0.2) !important;
+  color: #fff !important;
+}
+
+.input-group .form-control {
+  border-radius: var(--astrov-radius-sm) 0 0 var(--astrov-radius-sm) !important;
+}
+
+.btn-outline-primary {
+  background: transparent !important;
+  border: 1px solid var(--astrov-accent) !important;
+  color: var(--astrov-accent) !important;
+  border-radius: var(--astrov-radius-sm) !important;
+  transition: background var(--astrov-transition), color var(--astrov-transition), transform 0.15s ease;
+}
+
+.btn-outline-primary:hover {
+  background: rgba(251, 191, 36, 0.15) !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+
+/* Логин */
+.d-flex.vh-100 {
+  background: var(--astrov-bg) !important;
+  background-image: radial-gradient(ellipse 80% 70% at 50% 20%, rgba(251, 191, 36, 0.12), transparent 50%),
+    linear-gradient(180deg, #0b0b1e 0%, #060518 100%) !important;
+}
+
+.card-md {
+  background: var(--astrov-bg-card) !important;
+  border: 1px solid var(--astrov-border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+.card-md .card-title {
+  color: var(--astrov-accent) !important;
+}
+
+/* Дашборд - блоки как на референсе (Electric / Joomla) */
+.astrov-dashboard-header {
+  margin-bottom: 1.5rem;
+}
+
+.astrov-welcome {
+  font-size: 0.875rem;
+  color: var(--astrov-muted);
+  margin: 0.4rem 0 0;
+  font-weight: 400;
+}
+
+.astrov-dashboard {
+  padding-bottom: 1.5rem;
+}
+
+.astrov-kpi-row {
+  margin-bottom: 1.5rem;
+}
+
+.astrov-charts-row {
+  margin-bottom: 0;
+}
+
+/* KPI-карточки: круглые цветные иконки + крупная цифра + ссылка (как на картинке) */
+.astrov-kpi-card {
+  background: rgba(24, 24, 52, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0;
+  height: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.astrov-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+}
+
+.astrov-kpi-card .card-body {
+  padding: 1.25rem !important;
+  text-align: left;
+}
+
+.astrov-kpi-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.astrov-kpi-circle-1 { background: #ef4444; }
+.astrov-kpi-circle-2 { background: #3b82f6; }
+.astrov-kpi-circle-3 { background: #8b5cf6; }
+.astrov-kpi-circle-4 { background: #ec4899; }
+
+.astrov-kpi-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--astrov-muted);
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.astrov-kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  font-family: 'Bion', sans-serif;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+
+.astrov-kpi-link {
+  font-size: 0.75rem;
+  color: var(--astrov-accent);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.astrov-kpi-link:hover {
+  color: #fcd34d;
+}
+
+.astrov-kpi-link .fa-arrow-right {
+  font-size: 0.65rem;
+}
+
+.astrov-kpi-4 .astrov-kpi-link { display: none; }
+
+/* Карточки графиков - блоки как на референсе */
+.astrov-chart-card {
+  background: rgba(24, 24, 52, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0;
+  height: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.astrov-chart-card .card-header {
+  padding: 1rem 1.25rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: transparent !important;
+}
+
+.astrov-chart-card .card-header .card-title {
+  font-size: 0.9375rem !important;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.astrov-chart-card .card-body {
+  padding: 1rem 1.25rem !important;
+  min-height: 200px;
+}
+
+.astrov-donut-card .card-body.astrov-donut-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  min-height: 240px;
+}
+
+.astrov-donut-wrap {
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+}
+
+.astrov-donut-wrap canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+.astrov-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 140px;
+}
+
+.astrov-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.astrov-stat-row strong {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+}
+
+.astrov-stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.astrov-stat-dot-1 { background: #fbbf24; }
+.astrov-stat-dot-2 { background: #a78bfa; }
+.astrov-stat-dot-3 { background: #4ade80; }
+
+.chart-container {
+  background: rgba(24, 24, 52, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0;
+  margin-top: 0;
+  height: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.chart-container .card-body {
+  min-height: 200px;
+  padding: 1rem 1.25rem !important;
+}
+
+/* Главная - карточки разделов */
+.astrov-home-cards {
+  gap: 1.5rem;
+}
+
+.astrov-home-card {
+  display: block;
+  background: var(--astrov-bg-card);
+  border: 1px solid var(--astrov-border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  text-align: center;
+  text-decoration: none;
+  color: var(--astrov-text);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.astrov-home-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3), 0 0 24px rgba(251, 191, 36, 0.1);
+  border-color: var(--astrov-accent);
+  color: var(--astrov-text);
+}
+
+.astrov-home-card-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  background: rgba(251, 191, 36, 0.12);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--astrov-accent);
+}
+
+.astrov-home-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--astrov-accent);
+  margin: 0 0 0.5rem;
+}
+
+.astrov-home-card-desc {
+  font-size: 0.875rem;
+  color: var(--astrov-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Пустое состояние таблицы */
+.astrov-empty-state {
+  text-align: center;
+  padding: 2rem 1.5rem;
+}
+
+.astrov-empty-icon {
+  font-size: 2.25rem;
+  color: var(--astrov-muted);
+  opacity: 0.6;
+  margin-bottom: 0.75rem;
+}
+
+.astrov-empty-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--astrov-text);
+  margin: 0 0 0.35rem;
+}
+
+.astrov-empty-text {
+  font-size: 0.8125rem;
+  color: var(--astrov-muted);
+  margin: 0;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.4;
+}
+
+/* Дропдауны и модалки */
+.dropdown-menu {
+  background: var(--astrov-bg-card) !important;
+  border: 1px solid var(--astrov-border) !important;
+  border-radius: var(--astrov-radius) !important;
+  padding: 0.5rem 0 !important;
+  list-style: none !important;
+  min-width: 12rem;
+}
+
+.dropdown-menu li {
+  list-style: none !important;
+}
+
+.dropdown-item {
+  color: var(--astrov-text) !important;
+  transition: background var(--astrov-transition), color var(--astrov-transition), padding-left 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(251, 191, 36, 0.12) !important;
+  color: var(--astrov-accent) !important;
+  padding-left: 1rem;
+}
+
+.modal-content {
+  background: var(--astrov-bg-card) !important;
+  border: 1px solid var(--astrov-border) !important;
+  color: var(--astrov-text) !important;
+}
+
+.modal-header {
+  border-bottom-color: var(--astrov-border) !important;
+}
+
+.modal-footer {
+  border-top-color: var(--astrov-border) !important;
+}
+
+.modal-footer .btn:first-child {
+  background: rgba(251, 191, 36, 0.12) !important;
+  border: 1px solid var(--astrov-border) !important;
+  color: var(--astrov-accent) !important;
+  border-radius: var(--astrov-radius) !important;
+  transition: transform 0.15s ease, background var(--astrov-transition);
+}
+
+.modal-footer .btn:first-child:hover {
+  background: rgba(251, 191, 36, 0.22) !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+
+/* Пагинация - кнопки-таблетки, анимация */
+.pagination {
+  gap: 0.25rem;
+}
+
+.page-item .page-link {
+  background: rgba(251, 191, 36, 0.08) !important;
+  border: 1px solid var(--astrov-border) !important;
+  color: var(--astrov-accent) !important;
+  border-radius: var(--astrov-radius-sm) !important;
+  padding: 0.4rem 0.75rem;
+  font-weight: 500;
+  transition: background var(--astrov-transition), transform 0.15s ease, box-shadow var(--astrov-transition);
+}
+
+.page-item .page-link:hover:not(.disabled) {
+  background: rgba(251, 191, 36, 0.18) !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+
+.page-item.active .page-link {
+  background: linear-gradient(135deg, var(--astrov-accent), rgba(201, 162, 39, 0.9)) !important;
+  border-color: var(--astrov-accent) !important;
+  color: #0b0b1e !important;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+}
+
+.page-item.disabled .page-link {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* «На странице» dropdown - в одном стиле с кнопками */
+.card-footer .dropdown .dropdown-toggle {
+  border-radius: var(--astrov-radius-sm);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.875rem;
+}
+
+/* Бейджи */
+.badge.bg-primary {
+  background: rgba(251, 191, 36, 0.3) !important;
+  color: var(--astrov-accent) !important;
+}
+
+/* Скроллбар */
+.page-body ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.page-body ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.page-body ::-webkit-scrollbar-thumb {
+  background: rgba(251, 191, 36, 0.4);
+  border-radius: 4px;
+}
+
+.page-body ::-webkit-scrollbar-thumb:hover {
+  background: rgba(251, 191, 36, 0.6);
+}

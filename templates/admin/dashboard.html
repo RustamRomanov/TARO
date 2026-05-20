@@ -1,0 +1,328 @@
+{% extends "admin/base.html" %}
+{% block title %}Админ - Astrov{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+{% block page_title %}{% endblock %}
+{% block page_title_class %}empty{% endblock %}
+{% block content_class %}dashboard-content{% endblock %}
+
+{% block head %}
+<style>
+  .content.dashboard-content { max-height: none !important; overflow: auto !important; display: block !important; }
+  .dashboard-grid { display:grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 0.6rem; align-content: start; }
+  .dashboard-grid > * { min-width: 0; }
+  .revenue-boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; width: 100%; margin-bottom: 0.5rem; }
+  .revenue-box { border: 1px solid rgba(251, 191, 36, 0.35); border-radius: 6px; padding: 0.5rem 0.6rem; text-align: center; background: rgba(0,0,0,0.2); }
+  .revenue-box .val { font-size: 1rem; font-weight: 700; color: var(--astrov-accent); }
+  .revenue-box .lbl { font-size: 0.65rem; color: var(--astrov-muted); margin-top: 0.15rem; }
+  .finance-block, .card { overflow: hidden; }
+  .chart-container { overflow: visible; min-width: 0; }
+  .finance-block .block-title { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .earnings-block { display: grid; grid-template-columns: 1fr; grid-template-rows: auto auto auto; gap: 0.75rem; }
+  .earnings-block .earnings-chart { grid-row: 1; grid-column: 1; min-height: 140px; }
+  .earnings-block .earnings-boxes { grid-row: 2; grid-column: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.4rem; }
+  .earnings-block .earnings-box { border: 1px solid rgba(251, 191, 36, 0.35); border-radius: 6px; padding: 0.5rem 0.65rem; background: rgba(0,0,0,0.2); }
+  .earnings-block .earnings-box .val { font-size: 1rem; font-weight: 700; color: var(--astrov-accent); }
+  .earnings-block .earnings-box .lbl { font-size: 0.65rem; color: var(--astrov-muted); margin-top: 0.1rem; }
+  .earnings-block .earnings-profit { grid-row: 3; grid-column: 1; border-top: 1px solid var(--astrov-border); padding-top: 0.5rem; text-align: center; font-weight: 700; font-size: 1.1rem; color: var(--astrov-accent); }
+  .dashboard-grid .finance-block .chart-container.sm { min-height: 190px; }
+  .chart-container { padding: 0 8px 8px 8px; box-sizing: border-box; }
+  @media (max-width: 1280px) {
+    .dashboard-grid { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+    .dashboard-grid .kpi-card[style*="span 2"] { grid-column: span 2 !important; }
+    .dashboard-grid .finance-block[style*="span 5"] { grid-column: span 3 !important; }
+    .dashboard-grid .card[style*="span 5"] { grid-column: span 3 !important; }
+  }
+  @media (max-width: 1024px) {
+    .dashboard-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .dashboard-grid .kpi-card { grid-column: span 1 !important; }
+    .dashboard-grid .finance-block[style*="span 5"] { grid-column: span 2 !important; }
+    .dashboard-grid .card[style*="span 5"] { grid-column: span 2 !important; }
+  }
+  @media (max-width: 600px) {
+    .dashboard-grid { grid-template-columns: 1fr !important; }
+    .revenue-boxes { grid-template-columns: repeat(2, 1fr); }
+    .dashboard-grid .kpi-card { grid-column: span 1 !important; }
+    .dashboard-grid .finance-block { grid-column: span 1 !important; }
+    .dashboard-grid .card { grid-column: span 1 !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+  <div class="kpi-card" style="grid-column: span 2;"><div class="kpi-value">{{ kpis.total_users }}</div><div class="kpi-label">Всего пользователей</div></div>
+  <div class="kpi-card" style="grid-column: span 2;"><div class="kpi-value">{{ kpis.periodic_users }}</div><div class="kpi-label">Активные (неделя)</div></div>
+  <div class="kpi-card" style="grid-column: span 2;"><div class="kpi-value">{{ kpis.subscribed }}</div><div class="kpi-label">С Тарифом</div></div>
+  <div class="kpi-card" style="grid-column: span 2;"><div class="kpi-value">{{ kpis.bot_stopped_users|default(0) }}</div><div class="kpi-label">Остановили бота</div></div>
+  <div class="kpi-card" style="grid-column: span 2;"><div class="kpi-value">{{ kpis.users_with_balance }}</div><div class="kpi-label">С балансом</div></div>
+
+  <div class="finance-block" style="grid-column: span 5; display: flex; flex-direction: column; min-height: 0;">
+    <div class="block-title">
+      <span><i class="fas fa-wallet"></i> Поступления</span>
+      <form method="post" action="/admin/sync-revenue" style="margin: 0;">
+        <button type="submit" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" title="Синхронизировать Revenue из старых платежей">Синхр. из платежей</button>
+      </form>
+    </div>
+    {% if flash %}<p class="flash-msg" style="font-size: 0.8rem; color: var(--astrov-accent); margin-bottom: 0.5rem;">{{ flash }}</p>{% endif %}
+    <div class="revenue-boxes">
+      <div class="revenue-box"><div class="val">{{ "%.0f"|format(revenue_totals.day) }} ₽</div><div class="lbl">День</div></div>
+      <div class="revenue-box"><div class="val">{{ "%.0f"|format(revenue_totals.week) }} ₽</div><div class="lbl">Неделя</div></div>
+      <div class="revenue-box"><div class="val">{{ "%.0f"|format(revenue_totals.month) }} ₽</div><div class="lbl">Месяц</div></div>
+      <div class="revenue-box"><div class="val">{{ "%.0f"|format(revenue_totals.total) }} ₽</div><div class="lbl">Всего</div></div>
+      <div class="revenue-box"><div class="val">{{ "%.0f"|format(bonus_totals.total) }} ₽</div><div class="lbl">Бонусы (всего)</div></div>
+    </div>
+    <div class="tabs" id="revenuePeriodTabs">
+      <button type="button" class="active" data-period="day">День</button>
+      <button type="button" data-period="month">Месяц</button>
+    </div>
+    <div class="chart-container sm" style="flex: 1; min-height: 140px;">
+      <canvas id="revenueChart"></canvas>
+    </div>
+  </div>
+
+  <div class="finance-block" style="grid-column: span 5; display: flex; flex-direction: column; min-height: 0;">
+    <div class="block-title"><i class="fas fa-coins"></i> Токены</div>
+    <div class="revenue-boxes">
+      <div class="revenue-box"><div class="val">{{ tokens_totals.day.all }}</div><div class="lbl">День</div></div>
+      <div class="revenue-box"><div class="val">{{ tokens_totals.week.all }}</div><div class="lbl">Неделя</div></div>
+      <div class="revenue-box"><div class="val">{{ tokens_totals.month.all }}</div><div class="lbl">Месяц</div></div>
+      <div class="revenue-box"><div class="val">{{ tokens_totals.total.all }}</div><div class="lbl">Всего</div></div>
+    </div>
+    <div class="tabs" id="tokenTabs">
+      <button type="button" class="active" data-mode="text">Текст</button>
+      <button type="button" data-mode="vision">Визуал</button>
+    </div>
+    <div class="chart-container sm" style="flex: 1; min-height: 140px;">
+      <canvas id="tokensChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card" style="grid-column: span 5; margin-bottom: 0; min-height: 0; display: flex; flex-direction: column;">
+    <div class="chart-container sm" style="flex: 1; min-height: 180px;">
+      <canvas id="pyramidChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card earnings-block" style="grid-column: span 5; margin-bottom: 0; min-height: 0;">
+    <div class="earnings-chart chart-container sm">
+      <canvas id="expensesChart"></canvas>
+    </div>
+    <div class="earnings-boxes">
+      <div class="earnings-box"><div class="val">{{ "%.0f"|format(revenue_totals.month) }} ₽</div><div class="lbl">Доход</div></div>
+      <div class="earnings-box" {% if yookassa_commission_percent and yookassa_commission_percent > 0 %}title="ЮKassa: {{ "%.1f"|format(yookassa_commission_percent) }}% от платежей"{% endif %}><div class="val">{{ "%.0f"|format(expenses_totals.month.by_category.commission) }} ₽</div><div class="lbl">Комиссии</div></div>
+      <div class="earnings-box"><div class="val">{{ "%.0f"|format(expenses_totals.month.by_category.advertising) }} ₽</div><div class="lbl">Реклама</div></div>
+      <div class="earnings-box"><div class="val">{{ "%.0f"|format(expenses_totals.month.by_category.taxes) }} ₽</div><div class="lbl">Налоги</div></div>
+      <div class="earnings-box"><div class="val">{{ "%.0f"|format(expenses_totals.month.by_category.tokens) }} ₽</div><div class="lbl">Токены</div></div>
+    </div>
+    <div class="earnings-profit">Прибыль: {{ "%.0f"|format(profit_month) }} ₽</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  var accent = 'rgba(251, 191, 36, 0.8)';
+  var accentFill = 'rgba(251, 191, 36, 0.15)';
+  var bonusAccent = 'rgba(59, 130, 246, 0.9)';
+  var bonusAccentFill = 'rgba(59, 130, 246, 0.05)';
+  Chart.defaults.color = 'rgba(255,255,255,0.7)';
+  Chart.defaults.borderColor = 'rgba(251, 191, 36, 0.2)';
+  Chart.defaults.font.family = "'Bion', sans-serif";
+
+  var revenueDaily = {{ revenue_series | tojson }};
+  var bonusDaily = {{ bonus_series | tojson }};
+  var revenueMonthly = {{ revenue_series_monthly | tojson }};
+  var bonusMonthly = {{ bonus_series_monthly | tojson }};
+
+  function revenueChartPeriod(period) {
+    var isMonth = period === 'month';
+    var data = isMonth ? revenueMonthly : revenueDaily;
+    var bonusData = isMonth ? bonusMonthly : bonusDaily;
+    var labels = data.map(function(d) { return isMonth ? d.label : ''; });
+    var dates = data.map(function(d) { return d.date; });
+    var amounts = data.map(function(d) { return d.amount; });
+    var bonusAmounts = bonusData.map(function(d) { return d.amount; });
+    revenueChart.data.labels = labels;
+    revenueChart.data.datasets[0].data = amounts;
+    revenueChart.data.datasets[0]._dates = dates;
+    revenueChart.data.datasets[1].data = bonusAmounts;
+    revenueChart.data.datasets[1]._dates = dates;
+    revenueChart.options.scales.x.ticks.display = !isMonth ? false : true;
+    revenueChart.update();
+  }
+
+  var revenueChart = new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+      labels: revenueDaily.map(function(d) { return ''; }),
+      datasets: [
+        {
+          label: 'Поступления',
+          data: revenueDaily.map(function(d) { return d.amount; }),
+          _dates: revenueDaily.map(function(d) { return d.date; }),
+          borderColor: accent,
+          backgroundColor: accentFill,
+          fill: true,
+          tension: 0.35,
+        },
+        {
+          label: 'Бонусы',
+          data: bonusDaily.map(function(d) { return d.amount; }),
+          _dates: bonusDaily.map(function(d) { return d.date; }),
+          borderColor: bonusAccent,
+          backgroundColor: bonusAccentFill,
+          borderDash: [6, 4],
+          fill: false,
+          tension: 0.35,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { left: 10, right: 10, top: 5, bottom: 5 } },
+      plugins: {
+        legend: { display: true },
+        tooltip: {
+          callbacks: {
+            title: function(items) {
+              var idx = items[0].dataIndex;
+              var d = revenueChart.data.datasets[0]._dates && revenueChart.data.datasets[0]._dates[idx];
+              return d ? d : '';
+            },
+            label: function(ctx) { return ctx.parsed.y + ' ₽'; }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { display: false, maxTicksLimit: 8 } },
+        y: { beginAtZero: true, ticks: { maxTicksLimit: 5 } }
+      },
+      animation: { duration: 600 }
+    }
+  });
+
+  document.getElementById('revenuePeriodTabs').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#revenuePeriodTabs button').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    revenueChartPeriod(btn.dataset.period);
+  });
+
+  var tokensText = {{ tokens_text_series | tojson }};
+  var tokensVision = {{ tokens_vision_series | tojson }};
+
+  var tokensChart = new Chart(document.getElementById('tokensChart'), {
+    type: 'line',
+    data: {
+      labels: tokensText.map(function(d) { return ''; }),
+      datasets: [{
+        label: 'Текстовые',
+        data: tokensText.map(function(d) { return d.tokens; }),
+        _dates: tokensText.map(function(d) { return d.date; }),
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16,185,129,0.15)',
+        fill: true,
+        tension: 0.35,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { left: 10, right: 10, top: 5, bottom: 5 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items) {
+              var idx = items[0].dataIndex;
+              var d = tokensChart.data.datasets[0]._dates && tokensChart.data.datasets[0]._dates[idx];
+              return d ? d : '';
+            },
+            label: function(ctx) { return ctx.parsed.y + ' токенов'; }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { display: false } },
+        y: { beginAtZero: true, ticks: { maxTicksLimit: 5 } }
+      },
+      animation: { duration: 600 }
+    }
+  });
+
+  document.getElementById('tokenTabs').addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#tokenTabs button').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    var mode = btn.dataset.mode;
+    var data = mode === 'vision' ? tokensVision : tokensText;
+    tokensChart.data.datasets[0].label = mode === 'vision' ? 'Визуальные' : 'Текстовые';
+    tokensChart.data.datasets[0].data = data.map(function(d) { return d.tokens; });
+    tokensChart.data.datasets[0]._dates = data.map(function(d) { return d.date; });
+    tokensChart.update();
+  });
+
+  var pyramidData = {{ gender_age.pyramid | tojson }};
+  var pyramidLabels = pyramidData.map(function(d) { return d.age; });
+  var maleValues = pyramidData.map(function(d) { return -d.male; });
+  var femaleValues = pyramidData.map(function(d) { return d.female; });
+  var maxVal = Math.max.apply(null, pyramidData.map(function(d) { return d.male + d.female; })) || 1;
+  new Chart(document.getElementById('pyramidChart'), {
+    type: 'bar',
+    data: {
+      labels: pyramidLabels,
+      datasets: [
+        { label: 'М', data: maleValues, backgroundColor: 'rgba(59, 130, 246, 0.8)', borderWidth: 0 },
+        { label: 'Ж', data: femaleValues, backgroundColor: 'rgba(251, 146, 60, 0.8)', borderWidth: 0 }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { left: 22, right: 22, top: 8, bottom: 8 } },
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) { return (ctx.raw < 0 ? 'М: ' : 'Ж: ') + Math.abs(ctx.raw); }
+          }
+        }
+      },
+      scales: {
+        x: {
+          min: -maxVal,
+          max: maxVal,
+          ticks: { callback: function(v) { return Math.abs(v); } }
+        },
+        y: { grid: { display: false } }
+      },
+      animation: { duration: 500 }
+    }
+  });
+
+  var revenueMonth = {{ revenue_totals.month | tojson }};
+  var expensesChartData = {{ expenses_chart | tojson }};
+  var expLabels = ['Доход'].concat(expensesChartData.map(function(d) { return d.label; }));
+  var expValues = [revenueMonth].concat(expensesChartData.map(function(d) { return d.amount; }));
+  new Chart(document.getElementById('expensesChart'), {
+    type: 'doughnut',
+    data: {
+      labels: expLabels,
+      datasets: [{ data: expValues, backgroundColor: ['#10b981','rgba(251,191,36,0.7)','#f59e0b','#ef4444','#8b5cf6'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { left: 10, right: 10, top: 10, bottom: 10 } },
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } },
+      animation: { duration: 500 }
+    }
+  });
+})();
+</script>
+{% endblock %}

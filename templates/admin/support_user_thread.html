@@ -1,0 +1,59 @@
+{% extends "admin/base.html" %}
+{% block title %}Astrov - Ветка {{ thread.telegram_id }}{% endblock %}
+{% block page_title_class %}{% endblock %}
+{% block page_title %}Ветка обращений{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h3 class="card-title">Пользователь</h3>
+  <p>
+    <strong>Кто:</strong>
+    {{ thread.profile.name if thread.profile else (thread.user.full_name if thread.user else "—") }}
+    (Telegram ID {{ thread.telegram_id }})
+  </p>
+  <p><strong>Username:</strong> {{ thread.user.username if thread.user and thread.user.username else "—" }}</p>
+  <p style="font-size:.85rem;color:var(--astrov-muted);">Сообщений в ветке: {{ thread.messages|length }}</p>
+  <p style="margin-top:.75rem;">
+    <a class="btn btn-outline" href="/admin/support">К списку веток</a>
+    {% if thread.messages %}
+    <a class="btn btn-primary" href="/admin/support/{{ thread.messages[-1].id }}" style="margin-left:.5rem;">Последнее обращение #{{ thread.messages[-1].id }}</a>
+    {% endif %}
+  </p>
+</div>
+
+<div class="card">
+  <h3 class="card-title">Хронология</h3>
+  <p style="font-size:.8rem;color:var(--astrov-muted);margin-bottom:1rem;">
+    Ответ и статус задаются для конкретного обращения: откройте нужное по ссылке ниже.
+  </p>
+  <div style="display:flex;flex-direction:column;gap:1rem;">
+    {% for m in thread.messages %}
+    <div style="border:1px solid var(--astrov-border);border-radius:10px;padding:.9rem;background:rgba(255,255,255,.02);">
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem;align-items:center;margin-bottom:.5rem;">
+        <a href="/admin/support/{{ m.id }}" style="color:var(--astrov-accent);font-weight:600;">Обращение #{{ m.id }}</a>
+        <span style="font-size:.75rem;color:var(--astrov-muted);">{{ m.created_at.strftime("%d.%m.%Y %H:%M") if m.created_at else "—" }}</span>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem;">
+        {% if m.read_state == "unread" %}
+        <span class="badge badge-warning">непрочитано</span>
+        {% else %}
+        <span class="badge badge-secondary">прочитано</span>
+        {% endif %}
+        {% if m.resolved_state == "resolved" %}
+        <span class="badge badge-success">решено</span>
+        {% else %}
+        <span class="badge badge-warning">не решено</span>
+        {% endif %}
+        {% if m.attachments_count %}
+        <span class="badge badge-secondary">вложений: {{ m.attachments_count }}</span>
+        {% endif %}
+      </div>
+      <div style="white-space:pre-wrap;font-size:.9rem;line-height:1.45;">{{ m.message[:500] }}{% if m.message|length > 500 %}…{% endif %}</div>
+      {% if m.message|length > 500 %}
+      <p style="margin-top:.5rem;"><a href="/admin/support/{{ m.id }}" style="color:var(--astrov-accent);font-size:.85rem;">Полный текст и ответ</a></p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

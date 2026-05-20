@@ -1,0 +1,59 @@
+{% extends "admin/base.html" %}
+{% block title %}Статистика использования - Astrov Админ{% endblock %}
+{% block page_title_class %}{% endblock %}
+{% block page_title %}Статистика использования{% endblock %}
+
+{% block content %}
+<div class="card">
+  <p style="color: var(--astrov-muted); margin-bottom: 1rem;">Количество использований по разделам приложения.</p>
+  <div class="grid grid-4" style="margin-bottom: 1.5rem;">
+    {% for label, count in usage_with_labels %}
+    <div class="kpi-card">
+      <div class="kpi-value">{{ count }}</div>
+      <div class="kpi-label">{{ label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  <h3 class="card-title">Детализация по вкладкам</h3>
+  <ul style="list-style: none; padding: 0; margin: 0;">
+    <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--astrov-border);"><strong>Таро</strong> - {{ usage.tarot | default(0) }} использований</li>
+    <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--astrov-border);"><strong>Сканер (визуальный анализ)</strong> - {{ usage.vision | default(0) }} использований</li>
+    <li style="padding: 0.75rem 0; border-bottom: 1px solid var(--astrov-border);"><strong>Сны</strong> - {{ usage.dream | default(0) }} использований</li>
+    <li style="padding: 0.75rem 0;"><strong>Нумерология</strong> - {{ usage.numerology | default(0) }} использований</li>
+  </ul>
+  <div class="chart-container" style="margin-top: 1.5rem;">
+    <canvas id="usageChart"></canvas>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  Chart.defaults.color = 'rgba(255,255,255,0.7)';
+  Chart.defaults.borderColor = 'rgba(251, 191, 36, 0.2)';
+  Chart.defaults.font.family = "'Bion', sans-serif";
+  var labels = {{ (usage_with_labels | map(attribute=0)) | list | tojson }};
+  var values = {{ (usage_with_labels | map(attribute=1)) | list | tojson }};
+  new Chart(document.getElementById('usageChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Использований',
+        data: values,
+        backgroundColor: ['rgba(251,191,36,0.6)','#10b981','#f59e0b','#8b5cf6'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } },
+      animation: { duration: 600 }
+    }
+  });
+})();
+</script>
+{% endblock %}
