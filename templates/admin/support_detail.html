@@ -13,7 +13,7 @@
 
 <div class="card">
   <h3 class="card-title">От пользователя</h3>
-  <p><strong>Кто:</strong> {{ details.profile.name if details.profile else (details.user.full_name if details.user else "-") }} (ID {{ details.feedback.user_id }})</p>
+  <p><strong>Кто:</strong> {{ details.user.full_name if details.user else (details.user.username if details.user else "-") }} (ID {{ details.feedback.user_id }})</p>
   <p><strong>Username:</strong> {{ details.user.username if details.user and details.user.username else "-" }}</p>
   <p><strong>Создано:</strong> {{ details.feedback.created_at.strftime("%d.%m.%Y %H:%M") if details.feedback.created_at else "-" }}</p>
   <div style="margin-top:.75rem;padding:.75rem;border:1px solid var(--astrov-border);border-radius:8px;background:rgba(255,255,255,.02);white-space:pre-wrap;">

@@ -22,7 +22,6 @@ from app.db.models import (
     History,
     HistoryType,
     Payment,
-    Profile,
     TarotReading,
     User,
 )

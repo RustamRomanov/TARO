@@ -34,5 +34,6 @@ tmp/
 # Uploads (runtime)
 uploads/
 
-# Geo build artifacts (catalog is committed; raw GeoNames dumps are not)
+# Geo / natal (removed from TARO)
 data/geonames/
+app/data/geo/

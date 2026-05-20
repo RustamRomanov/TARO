@@ -19,14 +19,12 @@ from app.db.models import (
     History,
     HistoryType,
     Payment,
-    Profile,
     Revenue,
     User,
 )
 from app.db.models.admin_setting import ADMIN_SETTING_USD_RUB
 from app.db.models.token_usage import TokenUsage
 from app.db.models.expense import EXPENSE_CATEGORY_LABELS
-from app.services.gender import infer_gender_from_name
 from app.services.limits import add_balance_ledger_on_topup
 from app.services.token_calculator import calculate_cost
 
@@ -47,22 +45,6 @@ from app.services.token_calculator import get_exchange_rate as _auto_get_exchang
 from app.services.token_calculator import update_exchange_rate as _auto_update_exchange_rate
 
 logger = logging.getLogger(__name__)
-
-
-def _profile_has_value(raw: str | None) -> bool:
-    return bool((raw or "").strip())
-
-
-def _profile_priority_key(profile: Profile) -> tuple[int, int, int, int, int, int, int]:
-    return (
-        1 if profile.birth_date else 0,
-        1 if _profile_has_value(profile.birth_city) else 0,
-        1 if _profile_has_value(profile.name) else 0,
-        1 if _profile_has_value(profile.gender) else 0,
-        1 if _profile_has_value(profile.avatar_url) else 0,
-        1 if bool(getattr(profile, "is_primary", False)) else 0,
-        int(profile.id or 0),
-    )
 
 
 async def get_dashboard_kpis(session: AsyncSession) -> dict[str, Any]:
@@ -141,45 +123,12 @@ def _age_bucket(age: int) -> str:
 
 
 async def get_gender_age_distribution(session: AsyncSession) -> dict[str, Any]:
-    """Распределение пол/возраст: по одному профилю на пользователя (с датой рождения), приоритет у первичного."""
-    today = date.today()
+    """TARO: нет профилей с датой рождения — пустая статистика."""
+    _ = session
     age_order = ["до 18", "18-25", "26-35", "36-45", "45-55", "55+"]
     age_buckets = {b: 0 for b in age_order}
-    pyramid: dict[str, dict[str, int]] = {b: {"male": 0, "female": 0} for b in age_order}
-
-    try:
-        r = await session.execute(
-            select(Profile.user_id, Profile.birth_date, Profile.gender, Profile.is_primary).where(
-                Profile.birth_date.isnot(None)
-            )
-        )
-        rows = r.all()
-    except Exception:
-        # Fallback for environments where profile schema is partially outdated.
-        return {
-            "by_gender": {},
-            "by_age": age_buckets,
-            "pyramid": [{"age": b, "male": 0, "female": 0} for b in age_order],
-        }
-    by_user: dict[int, tuple[date, str | None]] = {}
-    for (user_id, birth_date, gender, is_primary) in sorted(rows, key=lambda x: (x[0], not x[3])):
-        if user_id not in by_user or is_primary:
-            by_user[user_id] = (birth_date, gender)
-
     by_gender: dict[str, int] = {}
-    for user_id, (birth_date, gender) in by_user.items():
-        age = (today - birth_date).days // 365
-        bucket = _age_bucket(age)
-        age_buckets[bucket] = age_buckets.get(bucket, 0) + 1
-        g = (gender or "").lower().strip()
-        if g in ("m", "male", "м", "муж", "мужской"):
-            pyramid[bucket]["male"] = pyramid[bucket].get("male", 0) + 1
-            by_gender["m"] = by_gender.get("m", 0) + 1
-        elif g in ("f", "female", "ж", "жен", "женский"):
-            pyramid[bucket]["female"] = pyramid[bucket].get("female", 0) + 1
-            by_gender["f"] = by_gender.get("f", 0) + 1
-        else:
-            by_gender["не указан"] = by_gender.get("не указан", 0) + 1
+    pyramid: dict[str, dict[str, int]] = {b: {"male": 0, "female": 0} for b in age_order}
 
     pyramid_list = [
         {"age": b, "male": pyramid[b]["male"], "female": pyramid[b]["female"]}
@@ -997,64 +946,8 @@ async def get_users_list(
                     sync_count += 1
             except Exception:
                 pass
-    # У каждого пользователя один профиль.
     out = []
-    auto_profile_count = 0
     for u in users:
-        selected_profile_id: int | None = None
-        selected_name: str | None = None
-        selected_birth_date: date | None = None
-        selected_birth_city: str | None = None
-        selected_gender: str | None = None
-        try:
-            r = await session.execute(
-                select(Profile).where(Profile.user_id == u.telegram_id).order_by(Profile.id.asc())
-            )
-            profiles = r.scalars().all()
-            profile = max(profiles, key=_profile_priority_key) if profiles else None
-            # Автосоздание профиля из Telegram, если профиля нет
-            if not profile and auto_profile_count < 5 and (u.full_name or u.username):
-                try:
-                    await upsert_profile_for_user(
-                        session,
-                        u.telegram_id,
-                        name=(u.full_name or u.username or "").strip(),
-                        birth_date="",
-                        gender="",
-                        birth_city="",
-                    )
-                    await session.flush()
-                    r2 = await session.execute(
-                        select(Profile).where(Profile.user_id == u.telegram_id).order_by(Profile.id.asc())
-                    )
-                    profiles = r2.scalars().all()
-                    profile = max(profiles, key=_profile_priority_key) if profiles else None
-                    auto_profile_count += 1
-                except Exception as ap_exc:
-                    logger.warning("Auto-create profile for user_id=%s failed: %s", u.telegram_id, ap_exc)
-            if profile is not None:
-                selected_profile_id = int(profile.id)
-                selected_name = profile.name
-                selected_birth_date = profile.birth_date
-                selected_birth_city = profile.birth_city
-                selected_gender = profile.gender
-        except Exception as exc:
-            logger.warning("Failed to load profiles for admin list user_id=%s: %s", u.telegram_id, exc)
-        age = None
-        if selected_birth_date:
-            age = (date.today() - selected_birth_date).days // 365
-        gender = (str(selected_gender).strip().lower() if selected_gender else None)
-        if gender in {"male", "man", "м"}:
-            gender = "m"
-        elif gender in {"female", "woman", "ж"}:
-            gender = "f"
-        if not gender:
-            name_src = (selected_name or "") or (u.full_name or "") or (u.username or "")
-            parts = (name_src or "").replace("_", " ").replace(".", " ").strip().split()
-            first_name = (parts[0] if parts else "")[:30]
-            inferred = infer_gender_from_name(first_name) if first_name else None
-            gender = inferred or gender
-
         last_activity_at = last_activity_by_user.get(int(u.telegram_id))
         visit_key = "older"
         visit_label = "старше года"
@@ -1085,14 +978,14 @@ async def get_users_list(
             "total_topup_cents": total_topup_cents,
             "username": u.username,
             "full_name": u.full_name,
-            "name": selected_name,
-            "profile_name": selected_name,
-            "birth_city": selected_birth_city,
+            "name": u.full_name or u.username,
+            "profile_name": u.full_name or u.username,
+            "birth_city": None,
             "status": u.status,
             "subscription_end_date": u.subscription_end_date.isoformat() if u.subscription_end_date else None,
             "trial_ends_at": u.trial_ends_at.isoformat() if u.trial_ends_at else None,
-            "gender": gender,
-            "age": age,
+            "gender": None,
+            "age": None,
             "balance_cents": balance_cents,
             "created_at": u.created_at.isoformat() if u.created_at else None,
             "bot_stopped_at": bot_stopped_at.isoformat() if bot_stopped_at else None,
@@ -1361,18 +1254,6 @@ async def get_user_for_edit(session: AsyncSession, telegram_id: int) -> dict | N
         for p in payments
     ]
 
-    r = await session.execute(
-        select(Profile).where(Profile.user_id == telegram_id).order_by(Profile.id.asc())
-    )
-    profiles = r.scalars().all()
-    profile = max(profiles, key=_profile_priority_key) if profiles else None
-    profile_name = profile.name if profile else ""
-    profile_birth_date = profile.birth_date.isoformat() if profile and profile.birth_date else ""
-    profile_gender = (profile.gender or "").strip().lower() if profile else ""
-    profile_birth_city = profile.birth_city or ""
-    profile_birth_lat = profile.birth_lat if profile and profile.birth_lat is not None else None
-    profile_birth_lon = profile.birth_lon if profile and profile.birth_lon is not None else None
-
     try:
         usage_by_day = await get_user_service_usage_by_day(session, telegram_id)
     except Exception:
@@ -1392,12 +1273,6 @@ async def get_user_for_edit(session: AsyncSession, telegram_id: int) -> dict | N
         "total_bonus_cents": total_bonus_cents,
         "total_spent_cents": total_spent_cents,
         "payments": payment_rows,
-        "profile_name": profile_name,
-        "profile_birth_date": profile_birth_date,
-        "profile_gender": profile_gender,
-        "profile_birth_city": profile_birth_city,
-        "profile_birth_lat": profile_birth_lat,
-        "profile_birth_lon": profile_birth_lon,
         "usage_by_day": usage_by_day,
         "bot_member_status": getattr(u, "bot_member_status", None) or "",
         "bot_stopped_at": u.bot_stopped_at.isoformat() if getattr(u, "bot_stopped_at", None) else "",
@@ -1417,93 +1292,6 @@ def _parse_optional_coord(raw: str | float | None) -> float | None:
         return float(s)
     except ValueError:
         return None
-
-
-def _parse_birth_date_for_profile(value: str) -> date | None:
-    if not (value or "").strip():
-        return None
-    s = value.strip()
-    for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
-        try:
-            return datetime.strptime(s, fmt).date()
-        except ValueError:
-            continue
-    return None
-
-
-async def upsert_profile_for_user(
-    session: AsyncSession,
-    telegram_id: int,
-    name: str = "",
-    birth_date: str = "",
-    gender: str = "",
-    birth_city: str = "",
-    birth_lat: float | None = None,
-    birth_lon: float | None = None,
-) -> bool:
-    """Создать или обновить профиль пользователя. Возвращает True если изменено."""
-    birth_parsed = _parse_birth_date_for_profile(birth_date)
-    gender_norm = None
-    g = (gender or "").strip().lower()
-    if g in ("m", "f", "м", "ж", "male", "female"):
-        gender_norm = "m" if g in ("m", "м", "male") else "f"
-    elif (name or "").strip():
-        parts = (name or "").strip().split()
-        gender_norm = infer_gender_from_name(parts[0]) if parts else None
-
-    r = await session.execute(
-        select(Profile).where(Profile.user_id == telegram_id).order_by(Profile.id.asc())
-    )
-    profiles = r.scalars().all()
-    profile = max(profiles, key=_profile_priority_key) if profiles else None
-    from app.services.birth_place import normalize_stored_birth_place
-
-    city_in = (birth_city or "").strip()
-    place_city: str | None = None
-    place_lat: float | None = None
-    place_lon: float | None = None
-    if city_in:
-        place_city, place_lat, place_lon = normalize_stored_birth_place(
-            birth_city, birth_lat, birth_lon
-        )
-
-    if profile:
-        changed = False
-        if (name or "").strip() and (profile.name or "") != name.strip():
-            profile.name = name.strip()
-            changed = True
-        if birth_parsed and profile.birth_date != birth_parsed:
-            profile.birth_date = birth_parsed
-            changed = True
-        if gender_norm and (profile.gender or "") != gender_norm:
-            profile.gender = gender_norm
-            changed = True
-        if city_in:
-            if (
-                (profile.birth_city or "") != (place_city or "")
-                or profile.birth_lat != place_lat
-                or profile.birth_lon != place_lon
-            ):
-                profile.birth_city = place_city
-                profile.birth_lat = place_lat
-                profile.birth_lon = place_lon
-                changed = True
-        if changed:
-            await session.flush()
-        return changed
-    profile = Profile(
-        user_id=telegram_id,
-        name=name.strip() or None,
-        birth_date=birth_parsed,
-        birth_city=place_city,
-        birth_lat=place_lat,
-        birth_lon=place_lon,
-        gender=gender_norm,
-        is_primary=True,
-    )
-    session.add(profile)
-    await session.flush()
-    return True
 
 
 async def add_bonus_balance_for_user(
@@ -1913,13 +1701,6 @@ async def get_feedback_list(
 
     users_rows = (await session.execute(select(User).where(User.telegram_id.in_(uids)))).scalars().all()
     users_map = {int(u.telegram_id): u for u in users_rows}
-    profiles_rows = (
-        await session.execute(
-            select(Profile).where(Profile.user_id.in_(uids), Profile.is_primary == True)
-        )
-    ).scalars().all()
-    profiles_map = {int(p.user_id): p for p in profiles_rows}
-
     attach_totals = (
         await session.execute(
             select(Feedback.user_id, func.count(FeedbackAttachment.id))
@@ -1938,7 +1719,6 @@ async def get_feedback_list(
             continue
         read_state, resolved_state = _feedback_status_flags(latest.status)
         user = users_map.get(uid)
-        profile = profiles_map.get(uid)
         unread_n = int(r.unread_sum or 0)
         out.append(
             {
@@ -1947,7 +1727,7 @@ async def get_feedback_list(
                 "latest_id": int(latest.id),
                 "username": user.username if user else "",
                 "full_name": user.full_name if user else "",
-                "profile_name": profile.name if profile else "",
+                "profile_name": (user.full_name if user else "") or (user.username if user else ""),
                 "message": latest.message,
                 "created_at": latest.created_at,
                 "status": latest.status or "unread_unresolved",
@@ -1975,11 +1755,6 @@ async def get_feedback_user_thread(session: AsyncSession, telegram_id: int) -> d
     user = (
         await session.execute(select(User).where(User.telegram_id == int(telegram_id)).limit(1))
     ).scalar_one_or_none()
-    profile = (
-        await session.execute(
-            select(Profile).where(Profile.user_id == int(telegram_id), Profile.is_primary == True).limit(1)
-        )
-    ).scalar_one_or_none()
     fids = [int(f.id) for f in rows]
     attach_counts = (
         await session.execute(
@@ -2006,7 +1781,7 @@ async def get_feedback_user_thread(session: AsyncSession, telegram_id: int) -> d
     return {
         "telegram_id": int(telegram_id),
         "user": user,
-        "profile": profile,
+        "profile": None,
         "messages": messages,
     }
 
@@ -2020,11 +1795,6 @@ async def get_feedback_details(session: AsyncSession, feedback_id: int) -> dict[
         return None
     user = (
         await session.execute(select(User).where(User.telegram_id == feedback.user_id).limit(1))
-    ).scalar_one_or_none()
-    profile = (
-        await session.execute(
-            select(Profile).where(Profile.user_id == feedback.user_id, Profile.is_primary == True).limit(1)
-        )
     ).scalar_one_or_none()
     attachments = (
         await session.execute(
@@ -2044,7 +1814,7 @@ async def get_feedback_details(session: AsyncSession, feedback_id: int) -> dict[
     return {
         "feedback": feedback,
         "user": user,
-        "profile": profile,
+        "profile": None,
         "attachments": attachments,
         "replies": replies,
         "read_state": read_state,

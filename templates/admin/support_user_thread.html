@@ -8,7 +8,7 @@
   <h3 class="card-title">Пользователь</h3>
   <p>
     <strong>Кто:</strong>
-    {{ thread.profile.name if thread.profile else (thread.user.full_name if thread.user else "—") }}
+    {{ thread.user.full_name if thread.user else (thread.user.username if thread.user else "—") }}
     (Telegram ID {{ thread.telegram_id }})
   </p>
   <p><strong>Username:</strong> {{ thread.user.username if thread.user and thread.user.username else "—" }}</p>

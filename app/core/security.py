@@ -47,7 +47,7 @@ def validate_telegram_init_data(init_data: str) -> dict[str, Any] | None:
 
 
 def sanitize_profile_id_for_db(profile_id: int | None) -> int | None:
-    """Приводит profile_id к int32: клиент может передать Telegram user id - не передаём в БД (Profile.id = Integer)."""
+    """Приводит profile_id к int32: клиент может передать Telegram user id — в readings не сохраняем."""
     if profile_id is None:
         return None
     if profile_id < -2147483648 or profile_id > 2147483647:

@@ -23,7 +23,6 @@ import TarotMagicBallOverlay from '../components/tarot/TarotMagicBallOverlay';
 import { tarotDecks } from '../data/tarotDecks';
 import { getCardNameRu } from '../data/tarotCardNamesRu';
 import { SPREADS, getSpreadHint, getSpreadById, TAROLOGIST_SUGGESTED_QUESTIONS, SPREAD_PICKER_HINTS } from '../data/tarotSpreads';
-import { useProfile } from '../context/ProfileContext';
 import { useAuth } from '../context/AuthContext';
 import { useTarotSession } from '../context/TarotSessionContext';
 import { useChromeLayout } from '../context/ChromeLayoutContext';
@@ -4773,7 +4772,6 @@ function useTarot() {
 }
 
 export default function Tarot() {
-  const { activeUser } = useProfile();
   const { status, limits, authLoaded, refetchAuth } = useAuth();
   const { pushBottomNavSuppression, popBottomNavSuppression } = useChromeLayout();
   const isPaidAccess = status === 'full_access' || status === 'trial' || Boolean(limits?.is_paid);
@@ -4948,7 +4946,6 @@ export default function Tarot() {
     () => getRotatedSuggestedQuestions(selectedSpreadId, tarologistPromptVariant, 5),
     [selectedSpreadId, tarologistPromptVariant]
   );
-  const activeProfileId = useMemo(() => sanitizeProfileId(activeUser?.id), [activeUser?.id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -6858,7 +6855,6 @@ export default function Tarot() {
       const query = new URLSearchParams({
         init_data: getInitData(),
       });
-      if (activeProfileId != null) query.set('profile_id', String(activeProfileId));
       const res = await fetch(`${API_BASE}/api/tarot/stats?${query.toString()}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.detail || 'Не удалось получить статистику.');

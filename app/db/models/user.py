@@ -52,11 +52,6 @@ class User(Base, TimestampMixin):
     #: Когда зафиксировали остановку/блокировку бота (my_chat_member или ошибка доставки). None, если снова открыли бота
     bot_stopped_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    profiles: Mapped[list["Profile"]] = relationship(
-        "Profile",
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
     history: Mapped[list["History"]] = relationship(
         "History",
         back_populates="user",

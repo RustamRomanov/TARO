@@ -486,27 +486,10 @@ async def admin_user_edit_post(
     trial_ends_at = form.get("trial_ends_at", "").strip() or None
     gift_days_str = form.get("gift_days", "").strip()
     gift_days = int(gift_days_str) if gift_days_str.isdigit() else None
-    profile_name = (form.get("profile_name") or "").strip()
-    profile_birth_date = (form.get("profile_birth_date") or "").strip()
-    profile_gender = (form.get("profile_gender") or "").strip()
-    profile_birth_city = (form.get("profile_birth_city") or "").strip()
-    profile_birth_lat = services._parse_optional_coord(form.get("profile_birth_lat"))
-    profile_birth_lon = services._parse_optional_coord(form.get("profile_birth_lon"))
     user = await _safe_admin_call("user_edit_post_preload", lambda: services.get_user_for_edit(session, telegram_id), None)
     if not user:
         return RedirectResponse(url="/admin/users", status_code=302)
     try:
-        if profile_name or profile_birth_date or profile_gender or profile_birth_city:
-            await services.upsert_profile_for_user(
-                session,
-                telegram_id,
-                name=profile_name,
-                birth_date=profile_birth_date,
-                gender=profile_gender,
-                birth_city=profile_birth_city,
-                birth_lat=profile_birth_lat,
-                birth_lon=profile_birth_lon,
-            )
         await services.update_user_subscription(
             session,
             telegram_id,

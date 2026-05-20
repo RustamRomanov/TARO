@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.security import get_telegram_user_id_from_init_data, sanitize_profile_id_for_db
-from app.db.models import Profile, TarotReading, User
+from app.db.models import TarotReading, User
 from app.db.session import get_db
 from app.services.ai_client import AIServiceClient
 from app.services.cache import (
@@ -1479,20 +1479,10 @@ def _standard_card_name_ru(index: int) -> str:
 
 async def _resolve_profile(
     db: AsyncSession, user_id: int, profile_id: int | None
-) -> Profile | None:
-    profile_id = sanitize_profile_id_for_db(profile_id)
-    if profile_id is not None:
-        r = await db.execute(
-            select(Profile).where(Profile.id == profile_id, Profile.user_id == user_id).limit(1)
-        )
-        p = r.scalar_one_or_none()
-        if not p:
-            raise HTTPException(status_code=404, detail="Профиль не найден.")
-        return p
-    r = await db.execute(
-        select(Profile).where(Profile.user_id == user_id, Profile.is_primary == True).limit(1)
-    )
-    return r.scalar_one_or_none()
+) -> None:
+    """TARO: personalization by natal profile disabled."""
+    _ = db, user_id, profile_id
+    return None
 
 
 def _prepare_single_card(payload: DrawBatchRequest) -> BatchCard:
@@ -1549,9 +1539,7 @@ async def tarot_draw_batch(
     if spread_code not in SPREADS:
         raise HTTPException(status_code=400, detail="Неизвестный расклад.")
     user = await check_limits(db, user_id, "tarot", usage_key=spread_code)
-    profile = await _resolve_profile(db, user_id, sanitize_profile_id_for_db(payload.profile_id))
-    if not payload.personalize:
-        profile = None
+    profile = None
 
     cards: list[BatchCard]
     if spread_code == "single":

@@ -5,7 +5,7 @@ import { getMagic8BallAnswers } from '../../data/magic8BallAnswers';
 
 /**
  * Состояние и логика шара предсказаний. Вынесено в отдельный модуль без Three.js,
- * чтобы при ошибке загрузки 3D-шара в Profile показывать лайт-модалку с тем же состоянием.
+ * чтобы при ошибке загрузки 3D-шара показывать лайт-модалку с тем же состоянием.
  */
 export function useMagic8BallState(open, onClose) {
   const [answer, setAnswer] = useState(null);

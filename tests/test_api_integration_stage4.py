@@ -36,7 +36,6 @@ def api_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     async def _init_db() -> None:
         async with engine.begin() as conn:
             await conn.run_sync(tarot_routes.User.__table__.create, checkfirst=True)
-            await conn.run_sync(tarot_routes.Profile.__table__.create, checkfirst=True)
             await conn.run_sync(tarot_routes.TarotReading.__table__.create, checkfirst=True)
         async with session_factory() as session:
             session.add(

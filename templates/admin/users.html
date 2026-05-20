@@ -118,10 +118,6 @@
           <th class="col-user">ID</th>
           <th class="col-user">Имя</th>
           <th class="col-user">Username</th>
-          <th class="col-profile">Профиль</th>
-          <th class="col-profile">Пол</th>
-          <th class="col-profile">Возраст</th>
-          <th class="col-profile">Город</th>
           <th class="col-billing">Баланс</th>
           <th class="col-billing">Пополнение</th>
           <th class="col-billing">Тариф</th>
@@ -160,10 +156,6 @@
           <td class="col-user">{{ u.telegram_id }}</td>
           <td class="col-user">{{ (u.name or u.full_name) or '-' }}</td>
           <td class="col-user">@{{ u.username or '-' }}</td>
-          <td class="col-profile">{{ u.profile_name or '-' }}</td>
-          <td class="col-profile">{% if u.gender == 'm' %}М{% elif u.gender == 'f' %}Ж{% else %}-{% endif %}</td>
-          <td class="col-profile">{{ u.age if u.age is not none else '-' }}</td>
-          <td class="col-profile"><span class="clamp-2" title="{{ u.birth_city or '-' }}">{{ u.birth_city or '-' }}</span></td>
           <td class="col-billing">{{ (u.balance_cents or 0) // 100 }} ₽</td>
           <td class="col-billing">{{ (u.total_topup_cents or 0) // 100 }} ₽</td>
           <td class="col-billing">

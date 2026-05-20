@@ -4,7 +4,6 @@ from app.db.models.feedback import Feedback
 from app.db.models.feedback_attachment import FeedbackAttachment
 from app.db.models.feedback_reply import FeedbackReply
 from app.db.models.history import History, HistoryType
-from app.db.models.profile import Profile
 from app.db.models.expense import Expense
 from app.db.models.revenue import Revenue
 from app.db.models.tarot import TarotReading
@@ -19,7 +18,6 @@ from app.db.models.subscription_expiry_notice import SubscriptionExpiryNotice
 __all__ = [
     "Base",
     "User",
-    "Profile",
     "History",
     "HistoryType",
     "Feedback",

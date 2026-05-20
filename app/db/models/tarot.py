@@ -24,12 +24,7 @@ class TarotReading(Base):
         nullable=False,
         index=True,
     )
-    profile_id: Mapped[int | None] = mapped_column(
-        Integer,
-        ForeignKey("profiles.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
+    profile_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     spread_code: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     question: Mapped[str] = mapped_column(Text, nullable=False, default="")
     cards: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
